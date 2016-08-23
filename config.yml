@@ -1,0 +1,41 @@
+defaults:
+  # Application specific configuration keys
+  app:
+    # Prefix for exchanges, should always be v1/
+    exchangePrefix: v1/
+
+  # taskcluster credentials the service should use
+  taskcluster:
+    xxxBaseUrl:       '...' # BaseUrl for xxx service, overwriting can be useful
+    credentials:      # Load strings from environment variables
+      clientId:       !env TASKCLUSTER_CLIENT_ID
+      accessToken:    !env TASKCLUSTER_ACCESS_TOKEN
+  # Configuration for server
+  server:
+    publicUrl:                https://auth.taskcluster.net
+    port:                     !env:number PORT
+    env:                      !env NODE_ENV
+    forceSSL:                 !env:bool FORCE_SSL
+    trustProxy:               !env:bool TRUST_PROXY
+  # Pulse credentials
+  pulse:
+    username:                 !env PULSE_USERNAME
+    password:                 !env PULSE_PASSWORD
+  # AWS credentials, if needed
+  aws:
+    accessKeyId:              !env AWS_ACCESS_KEY_ID
+    secretAccessKey:          !env AWS_SECRET_ACCESS_KEY
+    region:                   'us-west-2'
+    apiVersion:               '2014-01-01'
+
+production:
+  # overwrite defaults for production
+  server:
+    forceSSL:                 true
+    trustProxy:               true
+    env:                      'production'
+
+test:
+  # overwrite defaults for test
+  server:
+    env:                      'development'

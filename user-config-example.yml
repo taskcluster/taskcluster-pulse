@@ -1,0 +1,7 @@
+defaults:
+  # Example file showing how to write a user-config.yml file that contains
+  # credentials for running tests locally. Notice that user-config.yml is
+  # ignored in .gitignore
+  pulse:
+    username: '...'
+    password: '...'
