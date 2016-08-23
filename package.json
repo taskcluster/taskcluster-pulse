@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "main": "node lib/server production",
+  "license": "MPL-2.0",
   "scripts": {
     "compile": "babel-compile -p taskcluster src:lib test:.test",
     "test": "mocha .test/*_test.js",
