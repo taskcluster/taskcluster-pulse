@@ -1,14 +1,29 @@
-Taskcluster Service Skeleton
-============================
+Taskcluster Pulse Management Service
+====================================
 
-This is a skeleton detailing best-pratices for writing taskcluster services, and
-serves to illustrate by example how our libraries should be used. This is meant
-for taskcluster developers and aims to help us get started quickly, as well as
-reaching consensus on the right way to do things.
+[![Build Status](https://travis-ci.org/taskcluster/taskcluster-pulse.svg?branch=master)](https://travis-ci.org/taskcluster/taskcluster-pulse)
+[![License](https://img.shields.io/badge/license-MPL%202.0-orange.svg)](http://mozilla.org/MPL/2.0)
 
+A service to manage Pulse credentials for anything using
+Taskcluster credentials. This allows us self-service and
+greater control withing the Taskcluster project.
+
+Usage
+-----
+
+Write this later.
+
+Options and Defaults
+--------------------
+
+Write this later.
+
+Testing
+-------
+
+The configuration you need to test this can be created from `user-config-example.yml`. Simply copy it over to `user-config.yml` and fill in the blanks.
+`npm install` and `npm test`. You can set `DEBUG=taskcluster-pulse,test` if you want to see what's going on.
 
 ## Post-Deployment Verification
 
-This service has no deployment, so there is no post-deployment verification.
-But if this was a real service, this is place we would write how the verify
-correct deployment.
+We need to figure this out before this is turned on for real.
