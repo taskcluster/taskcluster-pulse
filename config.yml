@@ -18,8 +18,15 @@ defaults:
     trustProxy:               !env:bool TRUST_PROXY
 
 production:
-  # overwrite defaults for production
   server:
     forceSSL:                 true
     trustProxy:               true
     env:                      'production'
+
+test:
+  server:
+    publicUrl:        http://localhost:60403
+    port:             60403
+    forceSSL:         false
+    trustProxy:       false
+    env:              development

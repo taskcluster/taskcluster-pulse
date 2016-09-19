@@ -409,6 +409,16 @@
           "version": "2.4.1",
           "from": "core-js@>=2.4.0 <3.0.0",
           "resolved": "https://registry.npmjs.org/core-js/-/core-js-2.4.1.tgz"
+        },
+        "source-map": {
+          "version": "0.1.32",
+          "from": "source-map@0.1.32",
+          "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.1.32.tgz"
+        },
+        "source-map-support": {
+          "version": "0.2.10",
+          "from": "source-map-support@>=0.2.10 <0.3.0",
+          "resolved": "https://registry.npmjs.org/source-map-support/-/source-map-support-0.2.10.tgz"
         }
       }
     },
@@ -1785,9 +1795,9 @@
       "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.5.6.tgz"
     },
     "source-map-support": {
-      "version": "0.2.10",
-      "from": "source-map-support@>=0.2.10 <0.3.0",
-      "resolved": "https://registry.npmjs.org/source-map-support/-/source-map-support-0.2.10.tgz",
+      "version": "0.4.2",
+      "from": "source-map-support@latest",
+      "resolved": "https://registry.npmjs.org/source-map-support/-/source-map-support-0.4.2.tgz",
       "dependencies": {
         "source-map": {
           "version": "0.1.32",
