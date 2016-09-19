@@ -6,6 +6,10 @@ let api = new API({
   description: [
     'The taskcluster-pulse service, typically available at `pulse.taskcluster.net`',
     'manages pulse credentials for taskcluster users.',
+    '',
+    'A service to manage Pulse credentials for anything using',
+    'Taskcluster credentials. This allows us self-service and',
+    'greater control within the Taskcluster project.',
   ].join('\n'),
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [],

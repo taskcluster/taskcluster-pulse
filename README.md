@@ -6,7 +6,7 @@ Taskcluster Pulse Management Service
 
 A service to manage Pulse credentials for anything using
 Taskcluster credentials. This allows us self-service and
-greater control withing the Taskcluster project.
+greater control within the Taskcluster project.
 
 Usage
 -----
