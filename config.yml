@@ -4,12 +4,17 @@ defaults:
     # Prefix for exchanges, should always be v1/
     exchangePrefix: v1/
 
-  # taskcluster credentials the service should use
+  aws:
+    accessKeyId:      !env AWS_ACCESS_KEY_ID
+    secretAccessKey:  !env AWS_SECRET_ACCESS_KEY
+    region:           us-east-1
+    apiVersion:       2014-01-01
+
   taskcluster:
     credentials:      # Load strings from environment variables
       clientId:       !env TASKCLUSTER_CLIENT_ID
       accessToken:    !env TASKCLUSTER_ACCESS_TOKEN
-  # Configuration for server
+
   server:
     publicUrl:                https://pulse.taskcluster.net
     port:                     !env:number PORT
