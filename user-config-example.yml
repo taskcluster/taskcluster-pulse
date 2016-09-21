@@ -1,2 +1,6 @@
 ---
 defaults:
+  rabbit:
+    username: '...'
+    password: '...'
+    baseUrl:  '...'

@@ -22,6 +22,11 @@ defaults:
     forceSSL:                 !env:bool FORCE_SSL
     trustProxy:               !env:bool TRUST_PROXY
 
+  rabbit:
+    username:                 !env RABBIT_USERNAME
+    password:                 !env RABBIT_PASSWORD
+    baseUrl:                  !env RABBIT_BASE_URL
+
 production:
   server:
     forceSSL:                 true

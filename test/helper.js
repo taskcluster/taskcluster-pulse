@@ -8,6 +8,7 @@ let config      = require('typed-env-config');
 let testing     = require('taskcluster-lib-testing');
 let api         = require('../lib/api');
 let load        = require('../lib/main');
+let Rabbit      = require('../lib/rabbitmanager');
 
 // Load configuration
 let cfg = config({profile: 'test'});
@@ -40,6 +41,8 @@ mocha.before(async () => {
       accessToken:    'none',
     },
   });
+
+  helper.rabbit = new Rabbit(cfg.rabbit);
 });
 
 mocha.after(async () => {
