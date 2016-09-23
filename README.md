@@ -21,8 +21,23 @@ Write this later.
 Testing
 -------
 
-The configuration you need to test this can be created from `user-config-example.yml`. Simply copy it over to `user-config.yml` and fill in the blanks.
-`npm install` and `npm test`. You can set `DEBUG=taskcluster-pulse,test` if you want to see what's going on.
+Steps before running the test:
+
+1. Install rabbitmq locally:
+   * macOS: `brew update && brew install rabbitmq`
+   * Linux: install rabbitmq from the repository of your distribution
+2. Enable management API: `rabbitmq-plugins enable rabbitmq_management`
+3. Start rabbitmq: `rabbitmq-server`.
+4. Create a `user-config.yml`: copy over `user-config-example.yml` (it has the default
+   user, password and port of rabbitmq filled in).
+5. `npm install`
+
+To run the test, use `npm test`. You can set `DEBUG=taskcluster-pulse,test` if you want to
+see what's going on.
+
+After each test, flush rabbitmq database with `rabbitmqctl reset`. (The test suite adds
+and removes users during the test. Flushing the database ensures nothing is leaked between
+tests.)
 
 ## Post-Deployment Verification
 

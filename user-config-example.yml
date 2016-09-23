@@ -1,6 +1,6 @@
 ---
 defaults:
   rabbit:
-    username: '...'
-    password: '...'
-    baseUrl:  '...'
+    username: 'guest'
+    password: 'guest'
+    baseUrl:  'http://localhost:15672/api'
