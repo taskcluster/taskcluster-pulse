@@ -45,7 +45,11 @@ api.declare({
   title:    'Rabbit Overview',
   output:	    'rabbit-overview.json',		
   description: [
+<<<<<<< HEAD
     'An overview of the Rabbit cluster',
+=======
+    'Documented later...',
+>>>>>>> b22884fb0c3e4a184a9087323489b21e79c35138
     '',
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
