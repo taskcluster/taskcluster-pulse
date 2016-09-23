@@ -1,5 +1,6 @@
 let API = require('taskcluster-lib-api');
 let debug = require('debug')('taskcluster-pulse');
+let _ = require("lodash");
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -36,3 +37,26 @@ api.declare({
     uptime:   process.uptime(),
   });
 });
+
+api.declare({
+  method:   'get',
+  route:    '/overview',
+  name:     'overview',
+  title:    'Rabbit Overview',
+  output:	    'rabbit-overview.json',		
+  description: [
+<<<<<<< HEAD
+    'An overview of the Rabbit cluster',
+=======
+    'Documented later...',
+>>>>>>> b22884fb0c3e4a184a9087323489b21e79c35138
+    '',
+    '**Warning** this api end-point is **not stable**.',
+  ].join('\n'),
+}, async function(req, res) {
+
+  res.reply(
+    _.pick(await this.rabbit.overview(),['rabbitmq_version','cluster_name','management_version'])
+  );
+});
+
