@@ -29,6 +29,10 @@ class RabbitManager {
   async overview() {
     return await this.request('overview');
   }
+
+  async clusterName() {
+    return await this.request('cluster-name');
+  }
 }
 
 module.exports = RabbitManager;
