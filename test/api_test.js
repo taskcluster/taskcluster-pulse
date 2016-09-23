@@ -5,4 +5,9 @@ suite('API', () => {
   test('ping', () => {
     return helper.pulse.ping();
   });
+
+  test('overview', () => {
+    return helper.pulse.overview();
+  });
 });
+

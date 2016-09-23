@@ -1,0 +1,27 @@
+$schema:  http://json-schema.org/draft-04/schema#
+title:                      "Rabbit Overview Response"
+description: |
+  Rabbit overview response
+type: object
+properties:
+  rabbitmq_version:
+    type:           string
+    title:          RabbitMQ Version
+    description:    RabbitMQ Version
+    minLength:      1
+  cluster_name:
+    type:           string
+    title:          Cluster Name
+    description:    Cluster Name
+    minLength:      1
+  management_version:
+    type:           string
+    title:          Management Version
+    description:    Management Version
+    minLength:      1
+additionalProperties: false
+required:
+  - rabbitmq_version
+  - cluster_name
+  - management_version
+
