@@ -1,6 +1,5 @@
 suite('Rabbit Wrapper', () => {
-  const expect = require('chai').expect
-
+  const expect = require('chai').expect;
   const assert = require('assert');
   const _ = require('lodash');
   const helper = require('./helper');
@@ -14,6 +13,11 @@ suite('Rabbit Wrapper', () => {
 
   test('clusterName', async () => {
     const clusterName = await helper.rabbit.clusterName();
-    expect(clusterName).to.be.defined;
+    assert(_.has(clusterName, 'name'));
+  });
+
+  test('createAndDeleteUser', async () => {
+    const name = await helper.rabbit.createUser();
+    const deleteUser = await helper.rabbit.deleteUser(name);
   });
 });

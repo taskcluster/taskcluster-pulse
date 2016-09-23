@@ -9,29 +9,56 @@
 
 let assert = require('assert');
 let rp = require('request-promise');
+let slugid = require('slugid');
 
 class RabbitManager {
   constructor({username, password, baseUrl}) {
     assert(username, 'Must provide a rabbitmq username!');
     assert(password, 'Must provide a rabbitmq password!');
     assert(baseUrl, 'Must provide a rabbitmq baseUrl!');
-    this.request = rp.defaults({
+    this.options = {
       baseUrl,
       auth: {
         username,
         password,
         sendImmediately: false,
       },
-      json: true,
-    });
+      headers: {'content-type': 'application/json'},
+      simple: true
+    };
+  }
+
+  requestFactory(optionsOverride = {}) {
+    let options = Object.assign({}, this.options, optionsOverride);
+    return rp.defaults(options);
   }
 
   async overview() {
-    return await this.request('overview');
+    return JSON.parse(await this.requestFactory()('overview'));
   }
 
   async clusterName() {
-    return await this.request('cluster-name');
+    return JSON.parse(await this.requestFactory()('cluster-name'));
+  }
+
+  async createUser() {
+    let name = slugid.v4();
+    let payload = {
+      password: name,
+      tags: ""
+    };
+
+    let response = await this.requestFactory({
+      body: JSON.stringify(payload),
+      method: 'PUT',
+    })(`users/${name}`);
+    return name;
+  }
+
+  async deleteUser(name) {
+    let response = await this.requestFactory({
+      method: 'delete'
+    })(`users/${name}`);
   }
 }
 
