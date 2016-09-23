@@ -1,12 +1,19 @@
 suite('Rabbit Wrapper', () => {
-  let assert = require('assert');
-  let _ = require('lodash');
-  let helper = require('./helper');
+  const expect = require('chai').expect
+
+  const assert = require('assert');
+  const _ = require('lodash');
+  const helper = require('./helper');
 
   test('overview', async () => {
-    let overview = await helper.rabbit.overview();
+    const overview = await helper.rabbit.overview();
     assert(_.has(overview, 'rabbitmq_version'));
     assert(_.has(overview, 'management_version'));
     assert(_.has(overview, 'cluster_name'));
+  });
+
+  test('clusterName', async () => {
+    const clusterName = await helper.rabbit.clusterName();
+    expect(clusterName).to.be.defined;
   });
 });

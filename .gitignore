@@ -2,3 +2,7 @@
 /lib
 /.test
 /node_modules
+
+# Vim
+*~
+.*.swp
