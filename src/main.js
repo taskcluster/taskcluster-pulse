@@ -7,6 +7,7 @@ let validator         = require('taskcluster-lib-validate');
 let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
 let v1                = require('./api');
+let Rabbit            = require('./rabbitmanager');
 
 // Create component loader
 let load = loader({
@@ -48,10 +49,15 @@ let load = loader({
     }),
   },
 
+  rabbit: {
+    requires: ['cfg'],
+    setup: ({cfg}) => new Rabbit(cfg.rabbit),
+  },
+
   api: {
-    requires: ['cfg', 'monitor', 'validator'],
-    setup: ({cfg, monitor, validator}) => v1.setup({
-      context:          {},
+    requires: ['cfg', 'monitor', 'validator', 'rabbit'],
+    setup: ({cfg, monitor, validator, rabbit}) => v1.setup({
+      context:          {rabbit},
       authBaseUrl:      cfg.taskcluster.authBaseUrl,
       publish:          process.env.NODE_ENV === 'production',
       baseUrl:          cfg.server.publicUrl + '/v1',

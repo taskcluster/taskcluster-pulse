@@ -12,7 +12,9 @@ let api = new API({
     'greater control within the Taskcluster project.',
   ].join('\n'),
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
-  context: [],
+  context: [
+    'rabbit', // An instance of rabbitmanager
+  ],
 });
 
 module.exports = api;
