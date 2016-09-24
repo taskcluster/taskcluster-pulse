@@ -49,6 +49,7 @@ suite('Rabbit Wrapper', () => {
     const tags = ['foo', 'bar'];
 
     let usersWithAllTags = helper.rabbit._filterUsersWithAllTags(users, tags);
+
     assert(usersWithAllTags.length === 2);
     assert(_.find(usersWithAllTags, {tags: 'foo,bar'}));
     assert(_.find(usersWithAllTags, {tags: 'bar,foo'}));
@@ -65,6 +66,7 @@ suite('Rabbit Wrapper', () => {
     const tags = ['bar', 'car'];
 
     let usersWithAnyTags = helper.rabbit._filterUsersWithAnyTags(users, tags);
+
     assert(usersWithAnyTags.length === 4);
     assert.equal(usersWithAnyTags.filter(user => user.tags.includes('bar')).length, 3);
     assert.equal(usersWithAnyTags.filter(user => user.tags.includes('car')).length, 1);

@@ -97,6 +97,36 @@ class RabbitManager {
       return _.intersection(tags, userTagTokens).length > 0;
     });
   }
+
+  async users() {
+    return await this.request('users');
+  }
+
+  async usersWithAllTags(tags=[]) {
+    let userList = await users();
+    return _filterUsersWithAllTags(userList, tags);
+  }
+
+  _filterUsersWithAllTags(userList, tags) {
+    let delimiter = ',';
+    return userList.filter(user => {
+      let userTagTokens = user.tags.split(delimiter);
+      return _.difference(tags, userTagTokens).length === 0;
+    });
+  }
+
+  async usersWithAnyTags(tags=[]) {
+    let userList = await users();
+    return _filterUsersWithAnyTags(userList, tags);
+  }
+
+  _filterUsersWithAnyTags(userList, tags) {
+    let delimiter = ',';
+    return userList.filter(user => {
+      let userTagTokens = user.tags.split(delimiter);
+      return _.intersection(tags, userTagTokens).length > 0;
+    });
+  }
 }
 
 module.exports = RabbitManager;
