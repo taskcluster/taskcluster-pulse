@@ -36,34 +36,32 @@ suite('Rabbit Wrapper', () => {
     let usersList = await helper.rabbit.users();
     assert(usersList instanceof Array);
     assert(_.has(usersList[0], 'name'));
-    assert(_.has(usersList[0], 'password_hash'));
-    assert(_.has(usersList[0], 'hashing_algorithm'));
     assert(_.has(usersList[0], 'tags'));
   });
 
   test('_filterUsersWithAllTags', () => {
-    const user1 = { tags: 'foo,bar' };
-    const user2 = { tags: 'foo' };
-    const user3 = { tags: 'bar' };
-    const user4 = { tags: 'bar,foo' };
+    const user1 = {tags: 'foo,bar'};
+    const user2 = {tags: 'foo'};
+    const user3 = {tags: 'bar'};
+    const user4 = {tags: 'bar,foo'};
 
-    const users = [ user1, user2, user3, user4 ];
+    const users = [user1, user2, user3, user4];
     const tags = ['foo', 'bar'];
 
     let usersWithAllTags = helper.rabbit._filterUsersWithAllTags(users, tags);
     assert(usersWithAllTags.length === 2);
-    assert(_.find(usersWithAllTags, { tags: 'foo,bar' }));
-    assert(_.find(usersWithAllTags, { tags: 'bar,foo' }));
+    assert(_.find(usersWithAllTags, {tags: 'foo,bar'}));
+    assert(_.find(usersWithAllTags, {tags: 'bar,foo'}));
   });
 
   test('_filterUsersWithAnyTags', () => {
-    const user1 = { tags: 'foo,bar' };
-    const user2 = { tags: 'foo' };
-    const user3 = { tags: 'bar' };
-    const user4 = { tags: 'bar,foo' };
-    const user5 = { tags: 'car, foo' };
+    const user1 = {tags: 'foo,bar'};
+    const user2 = {tags: 'foo'};
+    const user3 = {tags: 'bar'};
+    const user4 = {tags: 'bar,foo'};
+    const user5 = {tags: 'car, foo'};
 
-    const users = [ user1, user2, user3, user4, user5 ];
+    const users = [user1, user2, user3, user4, user5];
     const tags = ['bar', 'car'];
 
     let usersWithAnyTags = helper.rabbit._filterUsersWithAnyTags(users, tags);
