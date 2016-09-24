@@ -1,6 +1,7 @@
 suite('Rabbit Wrapper', () => {
   const expect = require('chai').expect;
   const assert = require('assert');
+  const slugid = require('slugid');
   const _ = require('lodash');
   const helper = require('./helper');
 
@@ -17,8 +18,10 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('createAndDeleteUser', async () => {
-    const name = await helper.rabbit.createUser();
-    const deleteUser = await helper.rabbit.deleteUser(name);
+    const name = slugid.v4();
+    const password = name;
+    await helper.rabbit.createUser(name, password, "");
+    await helper.rabbit.deleteUser(name);
   });
 
   test('deleteUserException', async () => {

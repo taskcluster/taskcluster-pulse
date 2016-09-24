@@ -23,7 +23,9 @@ class RabbitManager {
         password,
         sendImmediately: false,
       },
-      headers: {'content-type': 'application/json'},
+      headers: {'Content-Type': 'application/json'},
+
+      // Instructs Request to throw exceptions whenever the response code is not 2xx.
       simple: true
     };
   }
@@ -41,18 +43,16 @@ class RabbitManager {
     return JSON.parse(await this.requestFactory()('cluster-name'));
   }
 
-  async createUser() {
-    let name = slugid.v4();
+  async createUser(name, password, tags) {
     let payload = {
-      password: name,
-      tags: ""
+      password: password,
+      tags: tags
     };
 
     let response = await this.requestFactory({
       body: JSON.stringify(payload),
       method: 'PUT',
     })(`users/${name}`);
-    return name;
   }
 
   async deleteUser(name) {
