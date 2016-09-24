@@ -9,6 +9,7 @@ let testing     = require('taskcluster-lib-testing');
 let api         = require('../lib/api');
 let load        = require('../lib/main');
 let Rabbit      = require('../lib/rabbitmanager');
+let data        = require('../lib/data');
 
 // Load configuration
 let cfg = config({profile: 'test'});
@@ -43,9 +44,25 @@ mocha.before(async () => {
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
+  
+  
+
 });
 
 mocha.after(async () => {
   await webServer.terminate();
   testing.fakeauth.stop();
+});
+
+mocha.beforeEach(async () =>{
+  //set up the namespace entities
+  helper.Namespaces = await load('Namespaces', {profile: 'test', process: 'test'});
+
+  //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
+  await helper.Namespaces.ensureTable();  
+});
+
+mocha.afterEach(async () => {
+  //remove the namespace entities
+  await  helper.Namespaces.removeTable();
 });

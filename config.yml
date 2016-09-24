@@ -3,6 +3,8 @@ defaults:
   app:
     # Prefix for exchanges, should always be v1/
     exchangePrefix: v1/
+    namespaceTableName: 'Namespaces'
+    namespacesExpirationDelay: '- 1 hour'
 
   aws:
     accessKeyId:      !env AWS_ACCESS_KEY_ID
@@ -27,6 +29,9 @@ defaults:
     password:                 !env RABBIT_PASSWORD
     baseUrl:                  !env RABBIT_BASE_URL
 
+  azure:
+    account:        !env AZURE_ACCOUNT_NAME
+
 production:
   server:
     forceSSL:                 true
@@ -34,9 +39,17 @@ production:
     env:                      'production'
 
 test:
+  app:
+    namespacesExpirationDelay: '0 hours'
+
   server:
     publicUrl:        http://localhost:60403
     port:             60403
     forceSSL:         false
     trustProxy:       false
     env:              development
+
+  azure:
+    account:  "inMemory"
+
+   

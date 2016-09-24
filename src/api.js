@@ -1,6 +1,9 @@
 let API = require('taskcluster-lib-api');
 let debug = require('debug')('taskcluster-pulse');
-let _ = require('lodash');
+let taskcluster = require('taskcluster-client');
+let slugid = require('slugid');
+let _ = require("lodash");
+
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -15,6 +18,7 @@ let api = new API({
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [
     'rabbit', // An instance of rabbitmanager
+    'Namespaces', //An instance of the namespace table manager
   ],
 });
 
@@ -57,5 +61,62 @@ api.declare({
       ['rabbitmq_version', 'cluster_name', 'management_version']
     )
   );
+});
+
+api.declare({
+/*Gets the namespace*/
+  method:   'get',
+  route:    '/namespace/:namespace',
+  name:     'namespace',
+  title:    'TODO',	
+  /*scopes:   [
+    ['pulse:namespace:<namespace>']
+  ],*/
+  //todo later: deferAuth: true,
+  description: [
+    'Get pulse user, given the taskcluster credentials with scopes.',
+    '',
+    '**Warning** this api end-point is **not stable**.',
+  ].join('\n'),
+}, async function(req, res) {
+ 
+  let {namespace} = req.params;
+  await this.Namespaces.ensureTable(); //do we need these
+
+  //check for any entries that contain the requested namespace
+  let data = await this.Namespaces.scan({
+      namespace:          this.Namespaces.op.equal(namespace),
+    }, {
+      limit:            250, //what should this value be
+    }
+  );
+
+  //create a new entry if none exists 
+  if(data.entries.length === 0){
+    await this.Namespaces.create({
+      namespace: namespace,
+      username: slugid.v4(),
+      password: slugid.v4(),
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 day'),
+    });
+  }
+  //otherwise, an entry already exists
+  else{
+    //what happens if some user requests same namespace?
+  }
+  
+
+
+  
+
+
+  res.reply(
+  //todo dummy code
+    {data: data.entries.length}
+   
+  );
+
+
 });
 
