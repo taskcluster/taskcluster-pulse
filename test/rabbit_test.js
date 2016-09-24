@@ -20,4 +20,13 @@ suite('Rabbit Wrapper', () => {
     const name = await helper.rabbit.createUser();
     const deleteUser = await helper.rabbit.deleteUser(name);
   });
+
+  test('deleteUserException', async () => {
+    try {
+      await helper.rabbit.deleteUser('not a user');
+      expect(true).to.be.false;
+    } catch (error) {
+      expect(error.statusCode).to.equal(404);
+    }
+  });
 });
