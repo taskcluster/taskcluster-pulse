@@ -7,9 +7,10 @@
  * specific logic in it.
  */
 
-let assert = require('assert');
-let rp = require('request-promise');
-let slugid = require('slugid');
+const assert = require('assert');
+const rp = require('request-promise');
+const slugid = require('slugid');
+const _ = require('lodash');
 
 class RabbitManager {
   constructor({username, password, baseUrl}) {
@@ -64,6 +65,36 @@ class RabbitManager {
   async deleteUser(name) {
     let response = await this.request(`users/${name}`, {
       method: 'delete',
+    });
+  }
+
+  async users() {
+    return await this.request('users');
+  }
+
+  async usersWithAllTags(tags=[]) {
+    let userList = await users();
+    return _filterUsersWithAllTags(userList, tags);
+  }
+
+  _filterUsersWithAllTags(userList, tags) {
+    let delimiter = ',';
+    return userList.filter(user => {
+      let userTagTokens = user.tags.split(delimiter);
+      return _.difference(tags, userTagTokens).length === 0;
+    });
+  }
+
+  async usersWithAnyTags(tags=[]) {
+    let userList = await users();
+    return _filterUsersWithAnyTags(userList, tags);
+  }
+
+  _filterUsersWithAnyTags(userList, tags) {
+    let delimiter = ',';
+    return userList.filter(user => {
+      let userTagTokens = user.tags.split(delimiter);
+      return _.intersection(tags, userTagTokens).length > 0;
     });
   }
 }
