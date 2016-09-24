@@ -1,7 +1,7 @@
 suite('Rabbit Wrapper', () => {
-  const expect = require('chai').expect
-
+  const expect = require('chai').expect;
   const assert = require('assert');
+  const slugid = require('slugid');
   const _ = require('lodash');
   const helper = require('./helper');
 
@@ -14,6 +14,21 @@ suite('Rabbit Wrapper', () => {
 
   test('clusterName', async () => {
     const clusterName = await helper.rabbit.clusterName();
-    expect(clusterName).to.be.defined;
+    assert(_.has(clusterName, 'name'));
+  });
+
+  test('createAndDeleteUser', async () => {
+    const name = slugid.v4();
+    await helper.rabbit.createUser(name, name, "");
+    await helper.rabbit.deleteUser(name);
+  });
+
+  test('deleteUserException', async () => {
+    try {
+      await helper.rabbit.deleteUser('not a user');
+      expect(true).to.be.false;
+    } catch (error) {
+      expect(error.statusCode).to.equal(404);
+    }
   });
 });
