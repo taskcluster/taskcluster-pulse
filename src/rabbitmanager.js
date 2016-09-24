@@ -24,22 +24,29 @@ class RabbitManager {
         sendImmediately: false,
       },
       headers: {'Content-Type': 'application/json'},
+      transform: (body) => {
+        if (body !== '') {
+          return JSON.parse(body);
+        }
+        return '';
+      },
       // Instructs Request to throw exceptions whenever the response code is not 2xx.
       simple: true
     };
   }
 
-  requestFactory(optionsOverride = {}) {
+  request(endpoint, optionsOverride = {}) {
+    optionsOverride['uri'] = endpoint;
     let options = Object.assign({}, this.options, optionsOverride);
-    return rp.defaults(options);
+    return rp(options);
   }
 
   async overview() {
-    return JSON.parse(await this.requestFactory()('overview'));
+    return await this.request('overview');
   }
 
   async clusterName() {
-    return JSON.parse(await this.requestFactory()('cluster-name'));
+    return await this.request('cluster-name');
   }
 
   async createUser(name, password, tags) {
@@ -48,16 +55,16 @@ class RabbitManager {
       tags: tags
     };
 
-    let response = await this.requestFactory({
+    let response = await this.request(`users/${name}`, {
       body: JSON.stringify(payload),
       method: 'PUT',
-    })(`users/${name}`);
+    });
   }
 
   async deleteUser(name) {
-    let response = await this.requestFactory({
+    let response = await this.request(`users/${name}`, {
       method: 'delete'
-    })(`users/${name}`);
+    });
   }
 }
 
