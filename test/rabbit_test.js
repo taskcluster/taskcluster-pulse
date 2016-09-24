@@ -19,7 +19,7 @@ suite('Rabbit Wrapper', () => {
 
   test('createAndDeleteUser', async () => {
     const name = slugid.v4();
-    await helper.rabbit.createUser(name, name, "");
+    await helper.rabbit.createUser(name, name, '');
     await helper.rabbit.deleteUser(name);
   });
 

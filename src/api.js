@@ -1,6 +1,6 @@
 let API = require('taskcluster-lib-api');
 let debug = require('debug')('taskcluster-pulse');
-let _ = require("lodash");
+let _ = require('lodash');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -52,7 +52,10 @@ api.declare({
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
-    _.pick(await this.rabbit.overview(),['rabbitmq_version','cluster_name','management_version'])
+    _.pick(
+      await this.rabbit.overview(),
+      ['rabbitmq_version', 'cluster_name', 'management_version']
+    )
   );
 });
 

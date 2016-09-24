@@ -6,7 +6,7 @@
   "license": "MPL-2.0",
   "scripts": {
     "compile": "babel-compile -p taskcluster src:lib test:.test",
-    "test": "mocha .test/*_test.js",
+    "test": "mocha .test/lint.js .test/*_test.js",
     "pretest": "npm run compile",
     "install": "npm run compile"
   },
@@ -19,10 +19,14 @@
     "aws-sdk": "^2.5.3",
     "azure-entities": "^1.0.2",
     "babel-compile": "^2.0.0",
+    "babel-eslint": "^6.1.2",
     "babel-preset-taskcluster": "^3.0.0",
     "babel-runtime": "^6.11.6",
     "debug": "^2.2.0",
+    "eslint-config-taskcluster": "^2.0.0",
+    "eslint-plugin-taskcluster": "^1.0.2",
     "lodash": "^4.15.0",
+    "mocha-eslint": "^3.0.1",
     "promise": "^7.1.1",
     "pulse-publisher": "^1.1.0",
     "request": "^2.75.0",

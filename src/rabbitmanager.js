@@ -31,7 +31,7 @@ class RabbitManager {
         return '';
       },
       // Instructs Request to throw exceptions whenever the response code is not 2xx.
-      simple: true
+      simple: true,
     };
   }
 
@@ -52,7 +52,7 @@ class RabbitManager {
   async createUser(name, password, tags) {
     let payload = {
       password: password,
-      tags: tags
+      tags: tags,
     };
 
     let response = await this.request(`users/${name}`, {
@@ -63,7 +63,7 @@ class RabbitManager {
 
   async deleteUser(name) {
     let response = await this.request(`users/${name}`, {
-      method: 'delete'
+      method: 'delete',
     });
   }
 }
