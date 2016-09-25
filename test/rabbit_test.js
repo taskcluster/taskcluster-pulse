@@ -110,6 +110,10 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('queues', async () => {
+    // Setup
+    const queueName = 'Temp queue';
+    await helper.rabbit.createQueue(queueName);
+
     const queues = await helper.rabbit.queues();
     assert(queues instanceof Array);
     assert(_.has(queues[0], 'memory'));
@@ -117,6 +121,9 @@ suite('Rabbit Wrapper', () => {
     assert(_.has(queues[0], 'messages_details'));
     assert(_.has(queues[0], 'messages_ready'));
     assert(_.has(queues[0], 'name'));
+
+    // Teardown
+    await helper.rabbit.deleteQueue(queueName);
   });
 
   test('createGetDeleteQueue', async () => {
