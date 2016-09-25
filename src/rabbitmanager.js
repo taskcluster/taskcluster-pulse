@@ -90,7 +90,7 @@ class RabbitManager {
       return comparator(combiner(tags, userListTokens).length, 0);
     });
   }
- 
+
   async userPermissions(user, vhost='/') {
     vhost = encodeURIComponent(vhost);
     return await this.request(`permissions/${vhost}/${user}`);
@@ -112,6 +112,28 @@ class RabbitManager {
   async deleteUserPermissions(user, vhost='/') {
     vhost = encodeURIComponent(vhost);
     await this.request(`permissions/${vhost}/${user}`, {method: 'DELETE'});
+  }
+
+  async queues() {
+    return await this.request('queues');
+  }
+
+  async queue(name, vhost='/') {
+    vhost = encodeURIComponent(vhost);
+    return await this.request(`queues/${vhost}/${name}`);
+  }
+
+  async createQueue(name, options={}, vhost='/') {
+    vhost = encodeURIComponent(vhost);
+    return await this.request(`queues/${vhost}/${name}`, {
+      body: JSON.stringify(options),
+      method: 'put',
+    });
+  }
+
+  async deleteQueue(name, vhost='/') {
+    vhost = encodeURIComponent(vhost);
+    return await this.request(`queues/${vhost}/${name}`, {method: 'delete'});
   }
 }
 
