@@ -113,7 +113,7 @@ api.declare({
   //get the entry that was just created
   let retrivedNamespaces = await this.Namespaces.scan(
     {
-      namespace:        this.Namespaces.op.equal(namespace)
+      namespace:        this.Namespaces.op.equal(namespace),
     }, 
     {
       limit:            250, 
