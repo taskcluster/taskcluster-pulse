@@ -8,7 +8,7 @@ let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
 let v1                = require('./api');
 let Rabbit            = require('./rabbitmanager');
-let data              = require('./data')
+let data              = require('./data');
 
 // Create component loader
 let load = loader({
@@ -83,7 +83,6 @@ let load = loader({
 
   },
 
-  
   api: {
     requires: ['cfg', 'monitor', 'validator', 'rabbit', 'Namespaces'],
     setup: ({cfg, monitor, validator, rabbit, Namespaces}) => v1.setup({

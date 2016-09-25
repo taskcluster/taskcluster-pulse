@@ -45,8 +45,6 @@ mocha.before(async () => {
 
   helper.rabbit = new Rabbit(cfg.rabbit);
   
-  
-
 });
 
 mocha.after(async () => {

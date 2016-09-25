@@ -18,7 +18,7 @@ let Namespace = Entity.configure({
   },
 });
 
-Namespace.expire = async function(now){
+Namespace.expire = async function(now) {
   assert(now instanceof Date, 'now must be given as option');
   var count = 0;
   await Entity.scan.call(this, {

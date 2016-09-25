@@ -1,9 +1,9 @@
 let API = require('taskcluster-lib-api');
+let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
 let taskcluster = require('taskcluster-client');
 let slugid = require('slugid');
-let _ = require("lodash");
-
+let _ = require('lodash');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -64,59 +64,72 @@ api.declare({
 });
 
 api.declare({
-/*Gets the namespace*/
+/*Gets the namespace, creates one if one doesn't exist*/
   method:   'get',
   route:    '/namespace/:namespace',
   name:     'namespace',
-  title:    'TODO',	
-  /*scopes:   [
-    ['pulse:namespace:<namespace>']
-  ],*/
+  title:    'Create a namespace',	
+  scopes:   [
+    ['pulse:namespace:<namespace>'],
+  ],
   //todo later: deferAuth: true,
   description: [
-    'Get pulse user, given the taskcluster credentials with scopes.',
+    'Creates a namespace, given the taskcluster credentials with scopes.',
     '',
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
  
   let {namespace} = req.params;
-  await this.Namespaces.ensureTable(); //do we need these
+
+  await this.Namespaces.ensureTable(); //set up the table if needed
 
   //check for any entries that contain the requested namespace
   let data = await this.Namespaces.scan({
-      namespace:          this.Namespaces.op.equal(namespace),
-    }, {
-      limit:            250, //what should this value be
-    }
+    namespace:          this.Namespaces.op.equal(namespace),
+  }, {
+    limit:            250, //what should this value be
+  }
   );
 
   //create a new entry if none exists 
-  if(data.entries.length === 0){
+  if (data.entries.length === 0) {
+    let username = slugid.v4();
+    let password = slugid.v4();
+    
     await this.Namespaces.create({
       namespace: namespace,
-      username: slugid.v4(),
-      password: slugid.v4(),
+      username: username,
+      password: password,
       created:  new Date(),
       expires:  taskcluster.fromNow('1 day'),
     });
-  }
-  //otherwise, an entry already exists
-  else{
+
+    await this.rabbit.createUser(username, password, 'taskcluster-pulse');
+  } else { 
     //what happens if some user requests same namespace?
   }
+
+  //get the entry that was just created
+  let retrivedNamespaces = await this.Namespaces.scan(
+    {
+      namespace:        this.Namespaces.op.equal(namespace)
+    }, 
+    {
+      limit:            250, 
+    });
   
-
-
-  
-
+  assert(retrivedNamespaces.entries.length === 1, 'Exactly one namespace must exist');
 
   res.reply(
-  //todo dummy code
-    {data: data.entries.length}
+  //return the namespace entity
+    {
+      namespace: retrivedNamespaces.entries[0].namespace,
+      username: retrivedNamespaces.entries[0].username,
+      password: retrivedNamespaces.entries[0].password,
+    }
    
   );
-
 
 });
 

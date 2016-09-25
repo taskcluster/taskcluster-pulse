@@ -14,22 +14,20 @@ suite('API', () => {
   
   /////////////////////use continuation tokens for all namespace scan methods
 
-
   test('expire namespace - no entries', async () => {
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
     await helper.Namespaces.scan({}, 
-    {
-      limit:            250, // max number of concurrent delete operations
-      handler:          (ns) => {
-        count++;
-      },
-    });
+      {
+        limit:            250, // max number of concurrent delete operations
+        handler:          (ns) => {
+          count++;
+        },
+      });
     
     assert(count===0, 'expired namespace not removed');
   });
-
 
   test('expire namespace - one entry', async () => {
     await helper.Namespaces.create({
@@ -44,12 +42,12 @@ suite('API', () => {
 
     var count = 0;
     await helper.Namespaces.scan({}, 
-    {
-      limit:            250, // max number of concurrent delete operations
-      handler:          (ns) => {
-        count++;
-      },
-    });
+      {
+        limit:            250, // max number of concurrent delete operations
+        handler:          (ns) => {
+          count++;
+        },
+      });
     
     assert(count===0, 'expired namespace not removed');
   });
@@ -75,12 +73,12 @@ suite('API', () => {
 
     var count = 0;
     await helper.Namespaces.scan({}, 
-    {
-      limit:            250, // max number of concurrent delete operations
-      handler:          (ns) => {
-        count++;
-      },
-    });
+      {
+        limit:            250, // max number of concurrent delete operations
+        handler:          (ns) => {
+          count++;
+        },
+      });
     
     assert(count===0, 'expired namespaces not removed');
   });
@@ -105,15 +103,15 @@ suite('API', () => {
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    var name = "";
+    var name = '';
     await helper.Namespaces.scan({}, 
-    {
-      limit:            250, // max number of concurrent delete operations
-      handler:          (ns) => {
-        name=ns.namespace;
-        count++;
-      },
-    });
+      {
+        limit:            250, // max number of concurrent delete operations
+        handler:          (ns) => {
+          name=ns.namespace;
+          count++;
+        },
+      });
     
     assert(count===1, 'one namespace should still be active');
     assert(name==='e2', 'wrong namespace removed');
