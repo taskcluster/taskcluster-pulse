@@ -91,4 +91,21 @@ suite('Rabbit Wrapper', () => {
     await helper.rabbit.deleteUser(name4);
     await helper.rabbit.deleteUser(name5);
   });
+
+  test('userPermissions', async () => {
+    const name = slugid.v4();
+    await helper.rabbit.createUser(name, name, []);
+    await helper.rabbit.setUserPermissions(name, '/', '.*', '.*', '.*');
+    let permissions = await helper.rabbit.userPermissions(name, '/');
+    assert(_.has(permissions, 'user'));
+    assert(_.has(permissions, 'vhost'));
+    await helper.rabbit.deleteUserPermissions(name, '/');
+    try {
+      await helper.rabbit.userPermissions(name, '/');
+      assert(false);
+    } catch (error) {
+      expect(error.statusCode).to.equal(404);
+    }
+    await helper.rabbit.deleteUser(name);
+  });
 });

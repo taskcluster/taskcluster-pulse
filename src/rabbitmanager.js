@@ -90,6 +90,29 @@ class RabbitManager {
       return comparator(combiner(tags, userListTokens).length, 0);
     });
   }
+ 
+  async userPermissions(user, vhost='/') {
+    vhost = encodeURIComponent(vhost);
+    return await this.request(`permissions/${vhost}/${user}`);
+  }
+
+  async setUserPermissions(user, vhost, configurePattern, writePattern, readPattern) {
+    let permissions = {
+      configure: configurePattern,
+      write: writePattern,
+      read: readPattern,
+    };
+    vhost = encodeURIComponent(vhost);
+    await this.request(`permissions/${vhost}/${user}`, {
+      body: JSON.stringify(permissions),
+      method: 'PUT',
+    });
+  }
+
+  async deleteUserPermissions(user, vhost='/') {
+    vhost = encodeURIComponent(vhost);
+    await this.request(`permissions/${vhost}/${user}`, {method: 'DELETE'});
+  }
 }
 
 module.exports = RabbitManager;
