@@ -19,7 +19,7 @@ suite('Rabbit Wrapper', () => {
 
   test('createAndDeleteUser', async () => {
     const name = slugid.v4();
-    await helper.rabbit.createUser(name, name, '');
+    await helper.rabbit.createUser(name, name, []);
     await helper.rabbit.deleteUser(name);
   });
 
@@ -33,42 +33,62 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('users', async () => {
-    let usersList = await helper.rabbit.users();
+    const usersList = await helper.rabbit.users();
     assert(usersList instanceof Array);
     assert(_.has(usersList[0], 'name'));
     assert(_.has(usersList[0], 'tags'));
   });
 
-  test('_filterUsersWithAllTags', () => {
-    const user1 = {tags: 'foo,bar'};
-    const user2 = {tags: 'foo'};
-    const user3 = {tags: 'bar'};
-    const user4 = {tags: 'bar,foo'};
+  test('usersWithAllTags', async () => {
+    // Setup
+    const name1 = 'A';
+    const name2 = 'B';
+    const name3 = 'C';
+    const name4 = 'D';
+    await helper.rabbit.createUser(name1, `${name1}password`, ['foo', 'bar']);
+    await helper.rabbit.createUser(name2, `${name2}password`, ['foo']);
+    await helper.rabbit.createUser(name3, `${name3}password`, ['bar']);
+    await helper.rabbit.createUser(name4, `${name4}password`, ['bar', 'foo']);
 
-    const users = [user1, user2, user3, user4];
     const tags = ['foo', 'bar'];
-
-    let usersWithAllTags = helper.rabbit._filterUsersWithAllTags(users, tags);
+    const usersWithAllTags = await helper.rabbit.usersWithAllTags(tags);
 
     assert(usersWithAllTags.length === 2);
     assert(_.find(usersWithAllTags, {tags: 'foo,bar'}));
     assert(_.find(usersWithAllTags, {tags: 'bar,foo'}));
+
+    // Cleanup
+    await helper.rabbit.deleteUser(name1);
+    await helper.rabbit.deleteUser(name2);
+    await helper.rabbit.deleteUser(name3);
+    await helper.rabbit.deleteUser(name4);
   });
 
-  test('_filterUsersWithAnyTags', () => {
-    const user1 = {tags: 'foo,bar'};
-    const user2 = {tags: 'foo'};
-    const user3 = {tags: 'bar'};
-    const user4 = {tags: 'bar,foo'};
-    const user5 = {tags: 'car, foo'};
+  test('usersWithAnyTags', async () => {
+    // Setup
+    const name1 = 'E';
+    const name2 = 'F';
+    const name3 = 'G';
+    const name4 = 'H';
+    const name5 = 'I';
+    await helper.rabbit.createUser(name1, `${name1}password`, ['moo', 'tar']);
+    await helper.rabbit.createUser(name2, `${name2}password`, ['moo']);
+    await helper.rabbit.createUser(name3, `${name3}password`, ['tar']);
+    await helper.rabbit.createUser(name4, `${name4}password`, ['tar', 'moo']);
+    await helper.rabbit.createUser(name5, `${name5}password`, ['car', 'moo']);
 
-    const users = [user1, user2, user3, user4, user5];
-    const tags = ['bar', 'car'];
-
-    let usersWithAnyTags = helper.rabbit._filterUsersWithAnyTags(users, tags);
+    const tags = ['tar', 'car'];
+    const usersWithAnyTags = await helper.rabbit.usersWithAnyTags(tags);
 
     assert(usersWithAnyTags.length === 4);
-    assert.equal(usersWithAnyTags.filter(user => user.tags.includes('bar')).length, 3);
+    assert.equal(usersWithAnyTags.filter(user => user.tags.includes('tar')).length, 3);
     assert.equal(usersWithAnyTags.filter(user => user.tags.includes('car')).length, 1);
+
+    // Cleanup
+    await helper.rabbit.deleteUser(name1);
+    await helper.rabbit.deleteUser(name2);
+    await helper.rabbit.deleteUser(name3);
+    await helper.rabbit.deleteUser(name4);
+    await helper.rabbit.deleteUser(name5);
   });
 });

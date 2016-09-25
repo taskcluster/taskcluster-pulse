@@ -51,14 +51,16 @@ class RabbitManager {
   }
 
   async createUser(name, password, tags) {
+    assert(tags instanceof Array);
+
     let payload = {
       password: password,
-      tags: tags,
+      tags: tags.join(),
     };
 
     let response = await this.request(`users/${name}`, {
       body: JSON.stringify(payload),
-      method: 'PUT',
+      method: 'put',
     });
   }
 
@@ -73,58 +75,19 @@ class RabbitManager {
   }
 
   async usersWithAllTags(tags=[]) {
-    let userList = await users();
-    return _filterUsersWithAllTags(userList, tags);
-  }
-
-  _filterUsersWithAllTags(userList, tags) {
-    let delimiter = ',';
-    return userList.filter(user => {
-      let userTagTokens = user.tags.split(delimiter);
-      return _.difference(tags, userTagTokens).length === 0;
-    });
+    let userList = await this.users();
+    return this._filterUsersWithTags(userList, tags, _.difference, _.eq);
   }
 
   async usersWithAnyTags(tags=[]) {
-    let userList = await users();
-    return _filterUsersWithAnyTags(userList, tags);
+    let userList = await this.users();
+    return this._filterUsersWithTags(userList, tags, _.intersection, _.gt);
   }
 
-  _filterUsersWithAnyTags(userList, tags) {
-    let delimiter = ',';
+  _filterUsersWithTags(userList, tags, combiner, comparator) {
     return userList.filter(user => {
-      let userTagTokens = user.tags.split(delimiter);
-      return _.intersection(tags, userTagTokens).length > 0;
-    });
-  }
-
-  async users() {
-    return await this.request('users');
-  }
-
-  async usersWithAllTags(tags=[]) {
-    let userList = await users();
-    return _filterUsersWithAllTags(userList, tags);
-  }
-
-  _filterUsersWithAllTags(userList, tags) {
-    let delimiter = ',';
-    return userList.filter(user => {
-      let userTagTokens = user.tags.split(delimiter);
-      return _.difference(tags, userTagTokens).length === 0;
-    });
-  }
-
-  async usersWithAnyTags(tags=[]) {
-    let userList = await users();
-    return _filterUsersWithAnyTags(userList, tags);
-  }
-
-  _filterUsersWithAnyTags(userList, tags) {
-    let delimiter = ',';
-    return userList.filter(user => {
-      let userTagTokens = user.tags.split(delimiter);
-      return _.intersection(tags, userTagTokens).length > 0;
+      const userListTokens = user.tags.split(',');
+      return comparator(combiner(tags, userListTokens).length, 0);
     });
   }
 }
