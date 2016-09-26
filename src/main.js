@@ -8,6 +8,7 @@ let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
 let v1                = require('./api');
 let Rabbit            = require('./rabbitmanager');
+let Stressor          = require('./rabbitstressor.js');
 
 // Create component loader
 let load = loader({
@@ -52,6 +53,11 @@ let load = loader({
   rabbit: {
     requires: ['cfg'],
     setup: ({cfg}) => new Rabbit(cfg.rabbit),
+  },
+
+  stressor: {
+    requires: ['cfg'],
+    setup: ({cfg}) => new Stressor(cfg.stressor),
   },
 
   api: {

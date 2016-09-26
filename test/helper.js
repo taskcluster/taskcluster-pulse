@@ -9,6 +9,7 @@ let testing     = require('taskcluster-lib-testing');
 let api         = require('../lib/api');
 let load        = require('../lib/main');
 let Rabbit      = require('../lib/rabbitmanager');
+let Stressor    = require('../lib/rabbitstressor');
 
 // Load configuration
 let cfg = config({profile: 'test'});
@@ -43,6 +44,7 @@ mocha.before(async () => {
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
+  helper.stressor = new Stressor(cfg.stressor);
 });
 
 mocha.after(async () => {

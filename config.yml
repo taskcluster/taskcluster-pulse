@@ -27,6 +27,9 @@ defaults:
     password:                 !env RABBIT_PASSWORD
     baseUrl:                  !env RABBIT_BASE_URL
 
+  stressor:
+    amqpUrl:                  !env STRESSOR_AMQP_URL
+
 production:
   server:
     forceSSL:                 true
