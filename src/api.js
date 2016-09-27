@@ -69,9 +69,9 @@ api.declare({
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Create a namespace',	
-  scopes:   [
+  /*scopes:   [
     ['pulse:namespace:<namespace>'],
-  ],
+  ],*/
   //todo later: deferAuth: true,
   description: [
     'Creates a namespace, given the taskcluster credentials with scopes.',
@@ -82,51 +82,42 @@ api.declare({
  
   let {namespace} = req.params;
 
-  await this.Namespaces.ensureTable(); //set up the table if needed
-
   //check for any entries that contain the requested namespace
-  let data = await this.Namespaces.scan({
+  let data = await this.Namespaces.query({
     namespace:          this.Namespaces.op.equal(namespace),
   }, {
-    limit:            250, //what should this value be
+    limit:            250, 
   }
   );
 
-  //create a new entry if none exists 
+  var newNamespace;
+
   if (data.entries.length === 0) {
-    let username = slugid.v4();
-    let password = slugid.v4();
+    //create a new entry if none exists 
     
-    await this.Namespaces.create({
+    newNamespace = await this.Namespaces.create({
       namespace: namespace,
-      username: username,
-      password: password,
+      username: slugid.v4(),
+      password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('1 day'),
     });
 
-    await this.rabbit.createUser(username, password, 'taskcluster-pulse');
-  } else { 
-    //what happens if some user requests same namespace?
+    await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']);
+
+  } else if (data.entries.length === 1) { 
+    //if a namespace already exists, use the loaded username & password
+    newNamespace = data.entries[0]; 
+  } else {
+    throw new Error('Exacly one namespace must exist');
   }
 
-  //get the entry that was just created
-  let retrivedNamespaces = await this.Namespaces.scan(
-    {
-      namespace:        this.Namespaces.op.equal(namespace),
-    }, 
-    {
-      limit:            250, 
-    });
-  
-  assert(retrivedNamespaces.entries.length === 1, 'Exactly one namespace must exist');
-
   res.reply(
-  //return the namespace entity
+    //return the namespace entity
     {
-      namespace: retrivedNamespaces.entries[0].namespace,
-      username: retrivedNamespaces.entries[0].username,
-      password: retrivedNamespaces.entries[0].password,
+      namespace: newNamespace.namespace,
+      username: newNamespace.username,
+      password: newNamespace.password,
     }
    
   );

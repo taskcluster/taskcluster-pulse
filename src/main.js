@@ -57,12 +57,17 @@ let load = loader({
 
   Namespaces: {
     requires: ['cfg', 'monitor'],
-    setup: async ({cfg, monitor}) => data.Namespace.setup({
-      account: cfg.azure.account,
-      table: cfg.app.namespaceTableName, 
-      credentials: cfg.taskcluster.credentials,
-      monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
-    }),
+    setup: async ({cfg, monitor}) => {
+      var ns = data.Namespace.setup({
+        account: cfg.azure.account,
+        table: cfg.app.namespaceTableName, 
+        credentials: cfg.taskcluster.credentials,
+        monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
+      });
+
+      await ns.ensureTable(); //create the table 
+      return ns;
+    },
   },
 
   'expire-namespaces':{
