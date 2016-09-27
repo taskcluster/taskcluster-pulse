@@ -1,5 +1,8 @@
 let API = require('taskcluster-lib-api');
+let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
+let taskcluster = require('taskcluster-client');
+let slugid = require('slugid');
 let _ = require('lodash');
 
 let api = new API({
@@ -15,6 +18,7 @@ let api = new API({
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [
     'rabbit', // An instance of rabbitmanager
+    'Namespaces', //An instance of the namespace table manager
   ],
 });
 
@@ -57,5 +61,66 @@ api.declare({
       ['rabbitmq_version', 'cluster_name', 'management_version']
     )
   );
+});
+
+api.declare({
+/*Gets the namespace, creates one if one doesn't exist*/
+  method:   'get',
+  route:    '/namespace/:namespace',
+  name:     'namespace',
+  title:    'Create a namespace',	
+  scopes:   [
+    ['pulse:namespace:<namespace>'],
+  ],
+  //todo later: deferAuth: true,
+  description: [
+    'Creates a namespace, given the taskcluster credentials with scopes.',
+    '',
+    '**Warning** this api end-point is **not stable**.',
+  ].join('\n'),
+}, async function(req, res) {
+ 
+  let {namespace} = req.params;
+
+  //check for any entries that contain the requested namespace
+  let data = await this.Namespaces.query({
+    namespace:          this.Namespaces.op.equal(namespace),
+  }, {
+    limit:            250, 
+  }
+  );
+
+  var newNamespace;
+
+  if (data.entries.length === 0) {
+    //create a new entry if none exists 
+    
+    newNamespace = await this.Namespaces.create({
+      namespace: namespace,
+      username: slugid.v4(),
+      password: slugid.v4(),
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 day'),
+    });
+
+    await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']);
+
+  } else if (data.entries.length === 1) { 
+    //if a namespace already exists, use the loaded username & password
+    newNamespace = data.entries[0]; 
+  } else {
+    throw new Error('Exacly one namespace must exist');
+  }
+
+  res.reply(
+    //return the namespace entity
+    {
+      namespace: newNamespace.namespace,
+      username: newNamespace.username,
+      password: newNamespace.password,
+    }
+   
+  );
+
 });
 
