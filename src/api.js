@@ -69,9 +69,9 @@ api.declare({
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Create a namespace',	
-  /*scopes:   [
+  scopes:   [
     ['pulse:namespace:<namespace>'],
-  ],*/
+  ],
   //todo later: deferAuth: true,
   description: [
     'Creates a namespace, given the taskcluster credentials with scopes.',
