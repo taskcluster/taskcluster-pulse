@@ -108,4 +108,41 @@ suite('Rabbit Wrapper', () => {
     }
     await helper.rabbit.deleteUser(name);
   });
+
+  test('queues', async () => {
+    // Setup
+    const queueName = 'Temp queue';
+    await helper.rabbit.createQueue(queueName);
+
+    const queues = await helper.rabbit.queues();
+    assert(queues instanceof Array);
+    assert(_.has(queues[0], 'memory'));
+    assert(_.has(queues[0], 'messages'));
+    assert(_.has(queues[0], 'messages_details'));
+    assert(_.has(queues[0], 'messages_ready'));
+    assert(_.has(queues[0], 'name'));
+
+    // Teardown
+    await helper.rabbit.deleteQueue(queueName);
+  });
+
+  test('createGetDeleteQueue', async () => {
+    const queueName = 'My message queue';
+    await helper.rabbit.createQueue(queueName);
+
+    const queue = await helper.rabbit.queue(queueName);
+    assert.equal(queue.name, queueName);
+
+    await helper.rabbit.deleteQueue(queueName);
+  });
+
+  test('deleteQueueNotFoundException', async () => {
+    try {
+      const queueName = 'not a queue';
+      await helper.rabbit.deleteQueue(queueName);
+      assert.equal(true, false);
+    } catch (error) {
+      assert.equal(error.statusCode, 404);
+    }
+  });
 });
