@@ -118,22 +118,45 @@ class RabbitManager {
     return await this.request('queues');
   }
 
+  queueNameExists(name) {
+    if (!name) {
+      console.warn('Please provide a name for the queue!');
+      return false;
+    }
+    return true;
+  }
+
+  encodeURIComponents(components) {
+    const result = {};
+    Object.keys(components).forEach(key => result[key] = encodeURIComponent(components[key]));
+    return result;
+  }
+
   async queue(name, vhost='/') {
-    vhost = encodeURIComponent(vhost);
-    return await this.request(`queues/${vhost}/${name}`);
+    if (!this.queueNameExists(name)) {
+      return;
+    }
+    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
+    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`);
   }
 
   async createQueue(name, options={}, vhost='/') {
-    vhost = encodeURIComponent(vhost);
-    return await this.request(`queues/${vhost}/${name}`, {
+    if (!this.queueNameExists(name)) {
+      return;
+    }
+    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
+    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {
       body: JSON.stringify(options),
       method: 'put',
     });
   }
 
   async deleteQueue(name, vhost='/') {
-    vhost = encodeURIComponent(vhost);
-    return await this.request(`queues/${vhost}/${name}`, {method: 'delete'});
+    if (!this.queueNameExists(name)) {
+      return;
+    }
+    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
+    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {method: 'delete'});
   }
 }
 
