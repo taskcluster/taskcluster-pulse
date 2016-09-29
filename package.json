@@ -17,7 +17,7 @@
   "dependencies": {
     "assume": "^1.4.1",
     "aws-sdk": "^2.5.3",
-    "azure-entities": "^1.0.2",
+    "azure-entities": "^1.0.3",
     "babel-compile": "^2.0.0",
     "babel-eslint": "^6.1.2",
     "babel-preset-taskcluster": "^3.0.0",
