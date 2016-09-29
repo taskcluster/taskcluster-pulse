@@ -3,7 +3,7 @@ defaults:
   app:
     # Prefix for exchanges, should always be v1/
     exchangePrefix: v1/
-    namespaceTableName: 'Namespaces'
+    namespaceTableName: 'PulseNamespaces'
     namespacesExpirationDelay: '- 1 hour'
 
   aws:
