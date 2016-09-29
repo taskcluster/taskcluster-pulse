@@ -166,6 +166,14 @@ class RabbitManager {
       method: 'post',
     });
   }
+
+  async messagesFromQueue(queueName, options={count: 5, requeue: true, encoding:'auto'}, vhost='/') {
+    vhost = encodeURIComponent(vhost);
+    return await this.request(`queues/${vhost}/${queueName}/get`, {
+      body: JSON.stringify(options),
+      method: 'post',
+    });
+  }
 }
 
 module.exports = RabbitManager;
