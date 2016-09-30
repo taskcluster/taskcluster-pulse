@@ -25,11 +25,9 @@ suite('Rabbit Stressor', () => {
 
     const messagesFromQueue = await helper.rabbit.messagesFromQueue(queueName);
 
-    assert.equal(messagesFromQueue[0].payload, messages[0]);
-    assert.equal(messagesFromQueue[1].payload, messages[1]);
-    assert.equal(messagesFromQueue[2].payload, messages[2]);
-    assert.equal(messagesFromQueue[3].payload, messages[3]);
-    assert.equal(messagesFromQueue[4].payload, messages[4]);
+    messages.forEach((message, index) => {
+      assert.equal(messagesFromQueue[index].payload, message);
+    });
 
     await helper.rabbit.deleteQueue(queueName);
   });
