@@ -111,7 +111,7 @@ class RabbitManager {
 
   async deleteUserPermissions(user, vhost='/') {
     vhost = encodeURIComponent(vhost);
-    await this.request(`permissions/${vhost}/${user}`, {method: 'DELETE'});
+    await this.request(`permissions/${vhost}/${user}`, {method: 'delete'});
   }
 
   async queues() {
@@ -160,16 +160,11 @@ class RabbitManager {
   }
 
   async messagesFromQueue(queueName, options={count: 5, requeue: true, encoding:'auto'}, vhost='/') {
-    vhost = encodeURIComponent(vhost);
-    return await this.request(`queues/${vhost}/${queueName}/get`, {
-      body: JSON.stringify(options),
-      method: 'post',
-    });
-  }
-
-  async messagesFromQueue(queueName, options={count: 5, requeue: true, encoding:'auto'}, vhost='/') {
-    vhost = encodeURIComponent(vhost);
-    return await this.request(`queues/${vhost}/${queueName}/get`, {
+    if (!this.queueNameExists(queueName)) {
+      return;
+    }
+    const uriEncodedComponents = this.encodeURIComponents({queueName: queueName, vhost: vhost});
+    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.queueName}/get`, {
       body: JSON.stringify(options),
       method: 'post',
     });
