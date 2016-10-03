@@ -111,7 +111,7 @@ class RabbitManager {
 
   async deleteUserPermissions(user, vhost='/') {
     vhost = encodeURIComponent(vhost);
-    await this.request(`permissions/${vhost}/${user}`, {method: 'DELETE'});
+    await this.request(`permissions/${vhost}/${user}`, {method: 'delete'});
   }
 
   async queues() {
