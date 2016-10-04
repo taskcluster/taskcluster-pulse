@@ -165,13 +165,4 @@ suite('Rabbit Wrapper', () => {
 
     await helper.rabbit.deleteQueue(queueName);
   });
-
-  test('deleteUserException', async () => {
-    try {
-      await helper.rabbit.deleteUser('not a user');
-      expect(true).to.be.false;
-    } catch (error) {
-      expect(error.statusCode).to.equal(404);
-    }
-  });
 });

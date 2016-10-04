@@ -12,6 +12,15 @@ suite('API', () => {
     return helper.pulse.overview();
   });
   
+  test('namespace', () => {
+    return helper.pulse.namespace('samplenamespace', {
+      contact: {
+        method: 'irc',
+        id:     'ircusername',
+      },
+    });
+  });
+
   /////////////////////use continuation tokens for all namespace scan methods
 
   test('expire namespace - no entries', async () => {
@@ -36,6 +45,7 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
     });
 
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
@@ -52,13 +62,14 @@ suite('API', () => {
     assert(count===0, 'expired namespace not removed');
   });
 
-  test('expire namespace - expire two entries', async () => {
+  test('expire namespace - two entries', async () => {
     await helper.Namespaces.create({
       namespace: 'e1',
       username: slugid.v4(),
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
     });
 
     await helper.Namespaces.create({
@@ -67,6 +78,7 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
     });
 
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
@@ -83,13 +95,14 @@ suite('API', () => {
     assert(count===0, 'expired namespaces not removed');
   });
 
-  test('expire namespace - expire one of two entries', async () => {
+  test('expire namespace - one of two entries', async () => {
     await helper.Namespaces.create({
       namespace: 'e1',
       username: slugid.v4(),
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
     });
 
     await helper.Namespaces.create({
@@ -98,6 +111,7 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('1 day'),
+      contact:  {},
     });
 
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));

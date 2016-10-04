@@ -1,0 +1,23 @@
+$schema:  http://json-schema.org/draft-04/schema#
+title:                      "Namespace Creation Request"
+description: |
+  Namespace creation request
+type: object
+properties:
+  contact:
+    type:           object
+    title:          Contact Information
+    description:    The contact Information
+    properties:
+        method:
+            type:           string
+            title:          Contact Method
+            description:    "The contact method (eg. irc, email)"
+        id:
+            type:           string
+            title:          The contact id
+            description:    "The contact id (eg. username, email address)"
+additionalProperties: false
+required:
+  - contact
+
