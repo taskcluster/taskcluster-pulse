@@ -65,10 +65,11 @@ api.declare({
 
 api.declare({
 /*Gets the namespace, creates one if one doesn't exist*/
-  method:   'get',
+  method:   'post',
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Create a namespace',	
+  input:    'namespace-request.json',
   scopes:   [
     ['pulse:namespace:<namespace>'],
   ],
@@ -80,7 +81,8 @@ api.declare({
   ].join('\n'),
 }, async function(req, res) {
  
-  let {namespace} = req.params;
+  let {namespace} = req.params; //the namespace requested
+  let contact = req.body.contact; //the contact information
 
   //check for any entries that contain the requested namespace
   let data = await this.Namespaces.query({
@@ -90,7 +92,7 @@ api.declare({
   }
   );
 
-  var newNamespace;
+  let newNamespace; //the namespace that will be returned in the response
 
   if (data.entries.length === 0) {
     //create a new entry if none exists 
@@ -101,6 +103,7 @@ api.declare({
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('1 day'),
+      contact:  contact,
     });
 
     await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']);
@@ -118,6 +121,7 @@ api.declare({
       namespace: newNamespace.namespace,
       username: newNamespace.username,
       password: newNamespace.password,
+      contact:  newNamespace.contact,
     }
    
   );
