@@ -42,8 +42,8 @@ api.declare({
   });
 });
 
-api.declare({
 /*Get an overview of the rabbit cluster*/
+api.declare({
   method:   'get',
   route:    '/overview',
   name:     'overview',
@@ -63,8 +63,8 @@ api.declare({
   );
 });
 
-api.declare({
 /*Gets the namespace, creates one if one doesn't exist*/
+api.declare({
   method:   'get',
   route:    '/namespace/:namespace',
   name:     'namespace',
@@ -82,45 +82,56 @@ api.declare({
  
   let {namespace} = req.params;
 
-  //check for any entries that contain the requested namespace
-  let data = await this.Namespaces.query({
-    namespace:          this.Namespaces.op.equal(namespace),
-  }, {
-    limit:            250, 
-  }
-  );
+  let newNamespace = await setNamespace(namespace);
 
-  var newNamespace;
-
-  if (data.entries.length === 0) {
-    //create a new entry if none exists 
-    
-    newNamespace = await this.Namespaces.create({
-      namespace: namespace,
-      username: slugid.v4(),
-      password: slugid.v4(),
-      created:  new Date(),
-      expires:  taskcluster.fromNow('1 day'),
-    });
-
-    await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']);
-
-  } else if (data.entries.length === 1) { 
-    //if a namespace already exists, use the loaded username & password
-    newNamespace = data.entries[0]; 
-  } else {
-    throw new Error('Exacly one namespace must exist');
-  }
-
-  res.reply(
-    //return the namespace entity
-    {
-      namespace: newNamespace.namespace,
-      username: newNamespace.username,
-      password: newNamespace.password,
-    }
-   
-  );
+  res.reply({
+    namespace: newNamespace.namespace,
+    username: newNamespace.username,
+    password: newNamespace.password,
+  });
 
 });
 
+/* Retrieve any entries containing the requested namespace.
+ * If an entry exists, use it. Otherwise, create a new entry and an associated rabbit user.*/
+async function setNamespace(namespace) {
+  
+  let data = await this.Namespaces.query({
+    namespace:     this.Namespaces.op.equal(namespace),
+  }, {
+    limit:         250, 
+  });
+
+  let newNamespace;
+  let entryExists = data.entries.length === 1;
+  
+  if (!entryExists) {
+  
+    newNamespace = createTableEntry(namespace);
+
+    await this.rabbit.setUserPermissions(
+      user =  await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
+      vhost             =  '/',
+      configurePattern  = '',
+      writePattern      = 'taskcluster/(exchanges|queues)/' + newNamespace.namespace + '/.*',
+      readPattern       = 'taskcluster/exchanges/.*'
+    );
+
+  } else if (entryExists) { 
+    newNamespace = data.entries[0]; 
+  } else { 
+    //Can this ever happen?    
+    throw new Error('Exactly one namespace must exist');
+  }
+  return newNamespace;
+}
+
+async function createTableEntry(namespace) {
+  return await this.Namespaces.create({
+    namespace: namespace,
+    username: slugid.v4(),
+    password: slugid.v4(),
+    created:  new Date(),
+    expires:  taskcluster.fromNow('1 day'),
+  });
+}
