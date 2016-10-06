@@ -15,6 +15,15 @@ let Namespace = Entity.configure({
     password:       Entity.types.String,
     created:        Entity.types.Date,
     expires:        Entity.types.Date,
+
+  /**
+   * Contact object with properties
+   * -method
+   * -id
+   * 
+   * See JSON schema for documentation
+   */
+    contact:        Entity.types.JSON,
   },
 });
 
