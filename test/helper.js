@@ -6,11 +6,11 @@ let mocha       = require('mocha');
 let taskcluster = require('taskcluster-client');
 let config      = require('typed-env-config');
 let testing     = require('taskcluster-lib-testing');
+let Stressor    = require('../.bin/rabbitstressor');
 let api         = require('../lib/api');
 let load        = require('../lib/main');
 let Rabbit      = require('../lib/rabbitmanager');
 let data        = require('../lib/data');
-let Stressor    = require('../lib/rabbitstressor');
 
 // Load configuration
 let cfg = config({profile: 'test'});
