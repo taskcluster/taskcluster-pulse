@@ -30,7 +30,10 @@ defaults:
     baseUrl:                  !env RABBIT_BASE_URL
 
   azure:
-    account:        !env AZURE_ACCOUNT_NAME
+    account:                  !env AZURE_ACCOUNT_NAME
+
+  stressor:
+    amqpUrl:                  !env STRESSOR_AMQP_URL
 
 production:
   server:
@@ -52,4 +55,4 @@ test:
   azure:
     account:  "inMemory"
 
-   
+
