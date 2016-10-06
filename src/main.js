@@ -9,6 +9,7 @@ let _                 = require('lodash');
 let v1                = require('./api');
 let Rabbit            = require('./rabbitmanager');
 let data              = require('./data');
+let Stressor          = require('./rabbitstressor.js');
 
 // Create component loader
 let load = loader({
@@ -60,12 +61,12 @@ let load = loader({
     setup: async ({cfg, monitor}) => {
       var ns = data.Namespace.setup({
         account: cfg.azure.account,
-        table: cfg.app.namespaceTableName, 
+        table: cfg.app.namespaceTableName,
         credentials: cfg.taskcluster.credentials,
         monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
       });
 
-      await ns.ensureTable(); //create the table 
+      await ns.ensureTable(); //create the table
       return ns;
     },
   },
@@ -85,7 +86,11 @@ let load = loader({
       monitor.stopResourceMonitoring();
       await monitor.flush();
     },
+  },
 
+  stressor: {
+    requires: ['cfg'],
+    setup: ({cfg}) => new Stressor(cfg.stressor),
   },
 
   api: {

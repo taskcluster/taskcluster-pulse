@@ -32,6 +32,9 @@ defaults:
   azure:
     account:        !env AZURE_ACCOUNT_NAME
 
+  stressor:
+    amqpUrl:                  !env STRESSOR_AMQP_URL
+
 production:
   server:
     forceSSL:                 true
@@ -52,4 +55,4 @@ test:
   azure:
     account:  "inMemory"
 
-   
+
