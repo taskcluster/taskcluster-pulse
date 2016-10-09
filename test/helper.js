@@ -6,6 +6,7 @@ let mocha       = require('mocha');
 let taskcluster = require('taskcluster-client');
 let config      = require('typed-env-config');
 let testing     = require('taskcluster-lib-testing');
+let Stressor    = require('../.bin/rabbitstressor');
 let api         = require('../lib/api');
 let load        = require('../lib/main');
 let Rabbit      = require('../lib/rabbitmanager');
@@ -44,7 +45,7 @@ mocha.before(async () => {
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
-  
+  helper.stressor = new Stressor(cfg.stressor);
 });
 
 mocha.after(async () => {
@@ -57,7 +58,7 @@ mocha.beforeEach(async () =>{
   helper.Namespaces = await load('Namespaces', {profile: 'test', process: 'test'});
 
   //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
-  await helper.Namespaces.ensureTable();  
+  await helper.Namespaces.ensureTable();
 });
 
 mocha.afterEach(async () => {
