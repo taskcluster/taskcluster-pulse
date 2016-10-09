@@ -18,7 +18,7 @@ properties:
       payload:
           type:           object
           title:          The contact payload
-          description:    "The contact payload (eg. username, email address)"
+          description:    "Details for the contact method (eg. username, email address)"
           oneOf:          
                           - {$ref: 'irc-request.json#'}
                           - {$ref: 'email-request.json#'}
