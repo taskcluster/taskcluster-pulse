@@ -1,0 +1,57 @@
+$schema:            http://json-schema.org/draft-04/schema#
+title:              "Send Email Request"
+description: |
+  Request to send an email
+type:               object
+properties:
+  address:
+    type:           string
+    format:         email
+    description: |
+      E-mail address to which the message should be sent
+  subject:
+    type:           string
+    maxLength:      255
+    minLength:      1
+    description: |
+      Subject line of the e-mail, this is plain-text
+  content:
+    type:           string
+    minLength:      1
+    maxLength:      102400
+    description: |
+      Content of the e-mail as **markdown**, will be rendered to HTML before
+      the email is sent. Notice that markdown allows for a few HTML tags, but
+      won't allow inclusion of script tags and other unpleasantries.
+  link:
+    type: object
+    description: |
+      Optional link that can be added as a button to the email.
+    properties:
+      text:
+        type:           string
+        maxLength:      40
+        minLength:      1
+        description: |
+          Text to display on link.
+      href:
+        type:           string
+        maxLength:      1024
+        minLength:      1
+        format:         uri
+        description: |
+          Where the link should point to.
+    additionalProperties: false
+    required:
+      - text
+      - href
+  replyTo:
+    type:           string
+    format:         email
+    description: |
+      Reply-to e-mail (this property is optional)
+additionalProperties: false
+required:
+  - address
+  - subject
+  - content

@@ -8,15 +8,23 @@ properties:
     type:           object
     title:          Contact Information
     description:    The contact Information
+    additionalProperties: false
     properties:
-        method:
-            type:           string
-            title:          Contact Method
-            description:    "The contact method (eg. irc, email)"
-        id:
-            type:           string
-            title:          The contact id
-            description:    "The contact id (eg. username, email address)"
+      method:
+          type:           string
+          enum:           ['email', 'irc']
+          title:          Contact Method
+          description:    "The contact method (eg. irc, email)"      
+      payload:
+          type:           object
+          title:          The contact payload
+          description:    "The contact payload (eg. username, email address)"
+          oneOf:          
+                          - {$ref: 'irc-request.json#'}
+                          - {$ref: 'email-request.json#'}
+    required:
+      - method  
+      - payload
 additionalProperties: false
 required:
   - contact

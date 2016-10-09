@@ -19,7 +19,7 @@ let Namespace = Entity.configure({
   /**
    * Contact object with properties
    * -method
-   * -id
+   * -payload
    * 
    * See JSON schema for documentation
    */

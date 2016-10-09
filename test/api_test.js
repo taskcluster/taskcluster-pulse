@@ -15,8 +15,12 @@ suite('API', () => {
   test('namespace', () => {
     return helper.pulse.namespace('samplenamespace', {
       contact: {
-        method: 'irc',
-        id:     'ircusername',
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     });
   });
