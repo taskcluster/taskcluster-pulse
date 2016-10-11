@@ -111,7 +111,7 @@ class RabbitManager {
 
   async deleteUserPermissions(user, vhost='/') {
     vhost = encodeURIComponent(vhost);
-    await this.request(`permissions/${vhost}/${user}`, {method: 'DELETE'});
+    await this.request(`permissions/${vhost}/${user}`, {method: 'delete'});
   }
 
   async queues() {
@@ -157,6 +157,33 @@ class RabbitManager {
     }
     const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
     return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {method: 'delete'});
+  }
+
+  /**
+   * Get messages from a queue.
+   *
+   * All options are mandatory except for options.truncate
+   *
+   * @param {string} queueName          - The name of the queue we wish to pull messages from
+   * @param {Object} options            - Options required to fulfill the request
+   * @param {number} options.count      - The amount of messages we wish to pull from the queue
+   * @param {boolean} options.requeue   - If true, messages will remain in the queue
+   * @param {string} options.encoding   - Must be either 'auto' or 'base64'
+   *                                      Payload will be returned as a UTF-8 encoded string when 'auto'
+   *                                      and base 64 encoded when 'base64'
+   * @param {number} options.truncate   - If present, the payload will truncate after the specified amount of bytes
+   * @param {string} vhost              - The virtual host where the queue resides
+   *
+   */
+  async messagesFromQueue(queueName, options={count: 5, requeue: true, encoding:'auto', truncate: 50000}, vhost='/') {
+    if (!this.queueNameExists(queueName)) {
+      return;
+    }
+    const uriEncodedComponents = this.encodeURIComponents({queueName: queueName, vhost: vhost});
+    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.queueName}/get`, {
+      body: JSON.stringify(options),
+      method: 'post',
+    });
   }
 }
 
