@@ -79,55 +79,46 @@ api.declare({
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
- 
   let {namespace} = req.params;
-
-  let newNamespace = await setNamespace(namespace);
-
+  let newNamespace = await setNamespace(this, namespace);
+  
   res.reply({
     namespace: newNamespace.namespace,
     username: newNamespace.username,
     password: newNamespace.password,
   });
-
 });
 
 /* Retrieve any entries containing the requested namespace.
  * If an entry exists, use it. Otherwise, create a new entry and an associated rabbit user.*/
-async function setNamespace(namespace) {
+async function setNamespace(context, namespace) {
   
-  let data = await this.Namespaces.query({
-    namespace:     this.Namespaces.op.equal(namespace),
+  let data = await context.Namespaces.query({
+    namespace:     context.Namespaces.op.equal(namespace),
   }, {
     limit:         250, 
   });
 
   let newNamespace;
-  let entryExists = data.entries.length === 1;
+  let entryDNE = data.entries.length === 0;
   
-  if (!entryExists) {
-  
-    newNamespace = createTableEntry(namespace);
-
-    await this.rabbit.setUserPermissions(
-      user =  await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
+  if (entryDNE) {
+    newNamespace = createTableEntry(context, namespace);
+    await context.rabbit.setUserPermissions(
+      user =  await context.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
       vhost             =  '/',
       configurePattern  = '',
       writePattern      = 'taskcluster/(exchanges|queues)/' + newNamespace.namespace + '/.*',
       readPattern       = 'taskcluster/exchanges/.*'
-    );
-
-  } else if (entryExists) { 
-    newNamespace = data.entries[0]; 
+    ); 
   } else { 
-    //Can this ever happen?    
-    throw new Error('Exactly one namespace must exist');
-  }
+    newNamespace = data.entries[0]; 
+  } 
   return newNamespace;
 }
 
-async function createTableEntry(namespace) {
-  return await this.Namespaces.create({
+async function createTableEntry(context, namespace) {
+  return await context.Namespaces.create({
     namespace: namespace,
     username: slugid.v4(),
     password: slugid.v4(),

@@ -3,7 +3,8 @@ suite('API', () => {
   let taskcluster = require('taskcluster-client');
   let helper = require('./helper');
   let slugid = require('slugid');
-
+  let _           = require('lodash');
+  
   test('ping', () => {
     return helper.pulse.ping();
   });
@@ -117,5 +118,28 @@ suite('API', () => {
     assert(name==='e2', 'wrong namespace removed');
   });
 
-});
+  test('"namespace" idempotency - return same namespace', async () => { 
+    let a = await helper.pulse.namespace('testname');
+    let b = await helper.pulse.namespace('testname');
+    assert(_.isEqual(a, b)); 
+  });
 
+  test('"namespace" idempotency - entry creation', async () => {
+    for (let i = 0; i < 10; i++) {
+      await helper.pulse.namespace('testname');
+    } 
+    var count = 0;
+    var name = '';
+    await helper.Namespaces.scan({}, 
+      {
+        limit:            250, // max number of concurrent delete operations
+        handler:          (ns) => {
+          name=ns.namespace;
+          count++;
+        },
+      });
+
+    assert(count === 1, 'Exactly one entry should be created');
+    
+  });
+});
