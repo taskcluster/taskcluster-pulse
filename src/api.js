@@ -70,9 +70,9 @@ api.declare({
   name:     'namespace',
   title:    'Create a namespace',	
   input:    'namespace-request.json',
-  /*scopes:   [
+  scopes:   [
     ['pulse:namespace:<namespace>'],
-  ],*/
+  ],
   //todo later: deferAuth: true,
   description: [
     'Creates a namespace, given the taskcluster credentials with scopes.',
