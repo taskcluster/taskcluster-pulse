@@ -103,8 +103,8 @@ suite('API', () => {
 
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
 
-    var count = 0;
-    var name = '';
+    let count = 0;
+    let name = '';
     await helper.Namespaces.scan({}, 
       {
         limit:            250, // max number of concurrent delete operations
@@ -123,23 +123,19 @@ suite('API', () => {
     let b = await helper.pulse.namespace('testname');
     assert(_.isEqual(a, b)); 
   });
-
+  
   test('"namespace" idempotency - entry creation', async () => {
     for (let i = 0; i < 10; i++) {
       await helper.pulse.namespace('testname');
     } 
-    var count = 0;
-    var name = '';
+    let count = 0;
     await helper.Namespaces.scan({}, 
       {
-        limit:            250, // max number of concurrent delete operations
+        limit:            250, 
         handler:          (ns) => {
-          name=ns.namespace;
           count++;
         },
       });
-
-    assert(count === 1, 'Exactly one entry should be created');
-    
+    assert.equal(count, 1);
   });
 });

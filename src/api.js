@@ -81,7 +81,6 @@ api.declare({
 }, async function(req, res) {
   let {namespace} = req.params;
   let newNamespace = await setNamespace(this, namespace);
-  
   res.reply({
     namespace: newNamespace.namespace,
     username: newNamespace.username,
@@ -89,40 +88,31 @@ api.declare({
   });
 });
 
-/* Retrieve any entries containing the requested namespace.
- * If an entry exists, use it. Otherwise, create a new entry and an associated rabbit user.*/
+/* Attempt to create a new namespace entry and associated Rabbit user.
+ * If the requested namespace exists, return it*/
 async function setNamespace(context, namespace) {
-  
-  let data = await context.Namespaces.query({
-    namespace:     context.Namespaces.op.equal(namespace),
-  }, {
-    limit:         250, 
-  });
-
-  let newNamespace;
-  let entryDNE = data.entries.length === 0;
-  
-  if (entryDNE) {
-    newNamespace = createTableEntry(context, namespace);
+  let newNamespace; 
+  try {
+    newNamespace = await context.Namespaces.create({
+      namespace: namespace,
+      username: slugid.v4(),
+      password: slugid.v4(),
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 day'),
+    });
+    
     await context.rabbit.setUserPermissions(
-      user =  await context.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
-      vhost             =  '/',
+      user = await context.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
+      vhost             = '/',
       configurePattern  = '',
-      writePattern      = 'taskcluster/(exchanges|queues)/' + newNamespace.namespace + '/.*',
-      readPattern       = 'taskcluster/exchanges/.*'
-    ); 
-  } else { 
-    newNamespace = data.entries[0]; 
+      writePattern      = `taskcluster/(exchanges|queues)/ ${newNamespace.namespace} + /.*`,
+      readPattern       = 'taskcluster/exchanges/.*',
+      ); 
+  } catch (err) {
+    if (!err || err.code !== 'EntityAlreadyExists') {
+      throw err;
+    }
+    newNamespace = await context.Namespaces.load({namespace: namespace});
   } 
   return newNamespace;
-}
-
-async function createTableEntry(context, namespace) {
-  return await context.Namespaces.create({
-    namespace: namespace,
-    username: slugid.v4(),
-    password: slugid.v4(),
-    created:  new Date(),
-    expires:  taskcluster.fromNow('1 day'),
-  });
 }

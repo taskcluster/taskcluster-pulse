@@ -8,7 +8,7 @@ let Entity = require('azure-entities');
 let Namespace = Entity.configure({
   version:          1,
   partitionKey:     Entity.keys.StringKey('namespace'),
-  rowKey:           Entity.keys.StringKey('username'),
+  rowKey:           Entity.keys.ConstantKey('namespace'),
   properties: {
     namespace:      Entity.types.String,
     username:       Entity.types.String,
