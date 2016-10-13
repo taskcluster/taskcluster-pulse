@@ -70,9 +70,9 @@ api.declare({
   name:     'namespace',
   title:    'Create a namespace',	
   input:    'namespace-request.json',
-  scopes:   [
+  /*scopes:   [
     ['pulse:namespace:<namespace>'],
-  ],
+  ],*/
   //todo later: deferAuth: true,
   description: [
     'Creates a namespace, given the taskcluster credentials with scopes.',
@@ -83,6 +83,10 @@ api.declare({
  
   let {namespace} = req.params; //the namespace requested
   let contact = req.body.contact; //the contact information
+
+  if (namespace.length>32 || !/^[A-Za-z-0-9_-]+$/.test(namespace)) {
+    throw new Error('Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]');
+  }
 
   //check for any entries that contain the requested namespace
   let data = await this.Namespaces.query({
