@@ -105,7 +105,7 @@ async function setNamespace(context, namespace) {
       user = await context.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
       vhost             = '/',
       configurePattern  = '',
-      writePattern      = `taskcluster/(exchanges|queues)/ ${newNamespace.namespace} + /.*`,
+      writePattern      = `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,
       readPattern       = 'taskcluster/exchanges/.*',
       ); 
   } catch (err) {
