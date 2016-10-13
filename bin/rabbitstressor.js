@@ -4,6 +4,7 @@
 
 const amqp = require('amqplib');
 const assert = require('assert');
+const Rx = require('rxjs');
 
 class RabbitStressor {
   constructor({amqpUrl}) {
@@ -16,10 +17,27 @@ class RabbitStressor {
     this.channel = await this.connection.createChannel();
   }
 
-  sendMessages(queueName, messages) {
+  sendMessages(queueName, messages, delayBetweenMessages) {
     assert(messages instanceof Array);
     this.channel.assertQueue(queueName, {durable: false});
-    messages.forEach(message => this.channel.sendToQueue(queueName, new Buffer(message)));
+
+    const messageStream = Rx.Observable.from(messages)
+    .zip(Rx.Observable.interval(delayBetweenMessages), (message) => {
+      return message;
+    });
+
+    // Returning a promise gives the option to upload messages asynchronously
+    return new Promise((resolve, reject) => {
+      messageStream.subscribe((message) => {
+        this.channel.sendToQueue(queueName, new Buffer(message));
+      },
+      (error) => {
+        reject(error);
+      },
+      () => {
+        resolve();
+      });
+    });
   }
 }
 
