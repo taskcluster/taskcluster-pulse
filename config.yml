@@ -34,10 +34,6 @@ defaults:
 
   stressor:
     amqpUrl:                  !env STRESSOR_AMQP_URL
-
-  stressor:
-    amqpUrl:                  !env STRESSOR_AMQP_URL
-
 production:
   server:
     forceSSL:                 true
@@ -45,9 +41,6 @@ production:
     env:                      'production'
 
 test:
-  app:
-    namespacesExpirationDelay: '0 hours'
-
   server:
     publicUrl:        http://localhost:60403
     port:             60403

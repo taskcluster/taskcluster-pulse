@@ -6,10 +6,10 @@ let monitor           = require('taskcluster-lib-monitor');
 let validator         = require('taskcluster-lib-validate');
 let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
+let Stressor          = require('../.bin/rabbitstressor');
 let v1                = require('./api');
 let Rabbit            = require('./rabbitmanager');
 let data              = require('./data');
-let Stressor          = require('./rabbitstressor.js');
 
 // Create component loader
 let load = loader({
