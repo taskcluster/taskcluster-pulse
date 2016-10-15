@@ -31,7 +31,7 @@ suite('API', () => {
   });
 
   test('namespace - char limit over', () => {
-    return helper.pulse.namespace('samplenamespacesamplenamespacesamplenamespace', {
+    return helper.pulse.namespace('samplenamespacesamplenamespacesamplenamespacesamplenamespacesamplenamespace', {
       contact: {
         method: 'irc',
         id:     'ircusername',
