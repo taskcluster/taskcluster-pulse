@@ -21,8 +21,42 @@ suite('API', () => {
     });
   });
 
-  /////////////////////use continuation tokens for all namespace scan methods
+  test('namespace - char limit under', () => {
+    return helper.pulse.namespace('samplenamespace', {
+      contact: {
+        method: 'irc',
+        id:     'ircusername',
+      },
+    });
+  });
 
+  test('namespace - char limit over', () => {
+    return helper.pulse.namespace('samplenamespacesamplenamespacesamplenamespace', {
+      contact: {
+        method: 'irc',
+        id:     'ircusername',
+      },
+    }).then(function() {
+      assert(false, 'This shouldn\'t have worked');
+    }, function(err) {
+      assert(err.statusCode === 400, 'Should have returned 400');
+    });
+  });
+
+  test('namespace - char invalid symbols', () => {
+    return helper.pulse.namespace('sample%namespace', {
+      contact: {
+        method: 'irc',
+        id:     'ircusername',
+      },
+    }).then(function() {
+      assert(false, 'This shouldn\'t have worked');
+    }, function(err) {
+      assert(err.statusCode === 400, 'Should have returned 400');
+    });
+  });
+
+  /////////////////////todo: use continuation tokens for all namespace scan methods
   test('expire namespace - no entries', async () => {
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
 

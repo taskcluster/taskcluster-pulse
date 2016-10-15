@@ -85,7 +85,13 @@ api.declare({
   let contact = req.body.contact; //the contact information
 
   if (namespace.length>32 || !/^[A-Za-z-0-9_-]+$/.test(namespace)) {
-    throw new Error('Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]');
+    return res.status(400).json({
+      message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
+      error: {
+        namespace:  req.params.namespace,
+      },
+    });
+    //throw new Error('Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]');
   }
 
   //check for any entries that contain the requested namespace
