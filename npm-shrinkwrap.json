@@ -2225,11 +2225,6 @@
       "from": "rx-lite@>=3.1.2 <4.0.0",
       "resolved": "https://registry.npmjs.org/rx-lite/-/rx-lite-3.1.2.tgz"
     },
-    "rxjs": {
-      "version": "5.0.0-rc.1",
-      "from": "rxjs@latest",
-      "resolved": "https://registry.npmjs.org/rxjs/-/rxjs-5.0.0-rc.1.tgz"
-    },
     "s3-upload-stream": {
       "version": "1.0.7",
       "from": "s3-upload-stream@>=1.0.7 <2.0.0",
@@ -2435,11 +2430,6 @@
       "version": "2.0.0",
       "from": "supports-color@>=2.0.0 <3.0.0",
       "resolved": "https://registry.npmjs.org/supports-color/-/supports-color-2.0.0.tgz"
-    },
-    "symbol-observable": {
-      "version": "1.0.3",
-      "from": "symbol-observable@>=1.0.1 <2.0.0",
-      "resolved": "https://registry.npmjs.org/symbol-observable/-/symbol-observable-1.0.3.tgz"
     },
     "table": {
       "version": "3.8.0",

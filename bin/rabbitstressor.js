@@ -1,10 +1,9 @@
 /**
  * An interface to stress test RabbitMQ queues.
  */
-
 const amqp = require('amqplib');
 const assert = require('assert');
-const Rx = require('rxjs');
+
 
 class RabbitStressor {
   constructor({amqpUrl}) {
@@ -21,23 +20,22 @@ class RabbitStressor {
     assert(messages instanceof Array);
     this.channel.assertQueue(queueName, {durable: false});
 
-    const messageStream = Rx.Observable.from(messages)
-    .zip(Rx.Observable.interval(delayBetweenMessages), (message) => {
-      return message;
+    return new Promise(resolve => {
+      this._recursiveTimeout(queueName, messages, delayBetweenMessages, resolve);
     });
+  }
 
-    // Returning a promise gives the option to upload messages asynchronously
-    return new Promise((resolve, reject) => {
-      messageStream.subscribe((message) => {
-        this.channel.sendToQueue(queueName, new Buffer(message));
-      },
-      (error) => {
-        reject(error);
-      },
-      () => {
-        resolve();
-      });
-    });
+  _recursiveTimeout(queueName, messageQueue, delayBetweenMessages, resolve) {
+    if (messageQueue.length <= 0) {
+      resolve();
+      return;
+    }
+
+    setTimeout(() => {
+      this.channel.sendToQueue(queueName, new Buffer(messageQueue[0]));
+      messageQueue.shift();
+      this._recursiveTimeout(queueName, messageQueue, delayBetweenMessages, resolve);
+    }, delayBetweenMessages);
   }
 }
 

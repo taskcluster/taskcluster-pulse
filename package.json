@@ -31,7 +31,6 @@
     "pulse-publisher": "^1.1.0",
     "request": "^2.75.0",
     "request-promise": "^4.1.1",
-    "rxjs": "^5.0.0-rc.1",
     "slugid": "^1.1.0",
     "source-map-support": "^0.4.2",
     "taskcluster-client": "^1.2.0",
