@@ -132,9 +132,7 @@ suite('API', () => {
     await helper.Namespaces.scan({}, 
       {
         limit:            250, 
-        handler:          (ns) => {
-          count++;
-        },
+        handler:          ns => count++,
       });
     assert.equal(count, 1);
   });

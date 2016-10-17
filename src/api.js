@@ -88,8 +88,10 @@ api.declare({
   });
 });
 
-/* Attempt to create a new namespace entry and associated Rabbit user.
- * If the requested namespace exists, return it*/
+/* 
+ * Attempt to create a new namespace entry and associated Rabbit user.
+ * If the requested namespace exists, return it.
+ */
 async function setNamespace(context, namespace) {
   let newNamespace; 
   try {
@@ -109,7 +111,7 @@ async function setNamespace(context, namespace) {
       readPattern       = 'taskcluster/exchanges/.*',
       ); 
   } catch (err) {
-    if (!err || err.code !== 'EntityAlreadyExists') {
+    if (err.code !== 'EntityAlreadyExists') {
       throw err;
     }
     newNamespace = await context.Namespaces.load({namespace: namespace});
