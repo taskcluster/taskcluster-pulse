@@ -34,7 +34,7 @@ suite('Rabbit Stressor', () => {
     await sendStringMessages(delayBetweenMessages);
   });
 
-  test('sendStringMessagesWithDelay', async() => {
+  test('sendStringMessagesWithDelay', async () => {
     const delayBetweenMessages = 50;
     await sendStringMessages(delayBetweenMessages);
   });

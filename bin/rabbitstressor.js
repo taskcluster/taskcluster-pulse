@@ -4,7 +4,6 @@
 const amqp = require('amqplib');
 const assert = require('assert');
 
-
 class RabbitStressor {
   constructor({amqpUrl}) {
     assert(amqpUrl, 'Must provide an AMQP URL!');
@@ -19,23 +18,19 @@ class RabbitStressor {
   sendMessages(queueName, messages, delayBetweenMessages) {
     assert(messages instanceof Array);
     this.channel.assertQueue(queueName, {durable: false});
-
-    return new Promise(resolve => {
-      let messagesDeepCopy = JSON.parse(JSON.stringify(messages));
-      this._recursiveTimeout(queueName, messagesDeepCopy, delayBetweenMessages, resolve);
-    });
+    return new Promise(resolve => this._sendMessagesOverInterval(queueName, messages, delayBetweenMessages, resolve));
   }
 
-  _recursiveTimeout(queueName, messageQueue, delayBetweenMessages, resolve) {
-    if (messageQueue.length <= 0) {
-      resolve();
-      return;
-    }
-
-    setTimeout(() => {
-      this.channel.sendToQueue(queueName, new Buffer(messageQueue[0]));
-      messageQueue.shift();
-      this._recursiveTimeout(queueName, messageQueue, delayBetweenMessages, resolve);
+  _sendMessagesOverInterval(queueName, messages, delayBetweenMessages, resolvePromise) {
+    let index = 0;
+    const intervalId = setInterval(() => {
+      if (index >= messages.length) {
+        clearInterval(intervalId);
+        resolvePromise();
+        return;
+      }
+      this.channel.sendToQueue(queueName, new Buffer(messages[index]));
+      index++;
     }, delayBetweenMessages);
   }
 }
