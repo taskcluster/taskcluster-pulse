@@ -21,7 +21,8 @@ class RabbitStressor {
     this.channel.assertQueue(queueName, {durable: false});
 
     return new Promise(resolve => {
-      this._recursiveTimeout(queueName, messages, delayBetweenMessages, resolve);
+      let messagesDeepCopy = JSON.parse(JSON.stringify(messages));
+      this._recursiveTimeout(queueName, messagesDeepCopy, delayBetweenMessages, resolve);
     });
   }
 
