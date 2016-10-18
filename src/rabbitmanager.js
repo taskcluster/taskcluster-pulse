@@ -5,6 +5,8 @@
  * if we find that it is sufficiently useful and generic.
  * With that in mind, this should not have any taskcluster-pulse
  * specific logic in it.
+ *
+ * @module rabbitmanager
  */
 
 const assert = require('assert');
@@ -12,6 +14,7 @@ const rp = require('request-promise');
 const slugid = require('slugid');
 const _ = require('lodash');
 
+/** @class */
 class RabbitManager {
   constructor({username, password, baseUrl}) {
     assert(username, 'Must provide a rabbitmq username!');
