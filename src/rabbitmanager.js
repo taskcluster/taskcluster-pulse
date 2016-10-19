@@ -141,22 +141,32 @@ class RabbitManager {
   }
 
   /**
-   * Get an individual permission of a user in a virtual host.
+   * Get an individual permission of a user in a virtual host, or a list of all
+   * permissions of a user.
    *
-   * @param {string} user       - Username.
-   * @param {string} vhost      - Virtual host.
-   * @default
+   * A user has either no permission in a vhost or exactly one permission which
+   * contains configure, write and read patterns.
+   *
+   * @param {string} user       - Username (required).
+   * @param {string} vhost      - Virtual host (if specified, an object
+   *     describing the user permission on the vhost will be returned; if
+   *     unspecified, an array of such objects will be returned).
    */
-  async userPermissions(user, vhost='/') {
+  async userPermissions(user, vhost) {
     assert(user);
-    assert(vhost);
 
-    vhost = encodeURIComponent(vhost);
-    return await this.request(`permissions/${vhost}/${user}`);
+    if (vhost) {
+      vhost = encodeURIComponent(vhost);
+      return await this.request(`permissions/${vhost}/${user}`);
+    } else {
+      return await this.request(`users/${user}/permissions`);
+    }
   }
 
   /**
    * Set an individual permission of a user in a virtual host. All parameters are mandatory.
+   *
+   * If there is an existing permission for this user and vhost, it will be overwritten.
    *
    * @param {string} user       - Username.
    * @param {string} vhost      - Virtual host.
@@ -267,7 +277,7 @@ class RabbitManager {
   /**
    * Get messages from a queue.
    *
-   * @param {string} queueName          - The name of the queue we wish to pull messages from.
+   * @param {string} name               - The name of the queue we wish to pull messages from.
    * @param {Object} options            - Options required to fulfill the request.
    *     All keys are mandatory except for options.truncate.
    * @param {number} options.count      - The amount of messages we wish to pull from the queue.
@@ -279,7 +289,7 @@ class RabbitManager {
    *     the specified amount of bytes.
    * @param {string} vhost              - The virtual host where the queue resides (default is "/").
    */
-  async messagesFromQueue(queueName, options={count: 5, requeue: true, encoding:'auto', truncate: 50000}, vhost='/') {
+  async messagesFromQueue(name, options={count: 5, requeue: true, encoding:'auto', truncate: 50000}, vhost='/') {
     assert(name);
     assert(options instanceof Object);
     assert(options.count);
@@ -287,8 +297,8 @@ class RabbitManager {
     assert(options.encoding);
     assert(vhost);
 
-    const uriEncodedComponents = this.encodeURIComponents({queueName: queueName, vhost: vhost});
-    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.queueName}/get`, {
+    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
+    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}/get`, {
       body: JSON.stringify(options),
       method: 'post',
     });
