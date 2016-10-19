@@ -7,7 +7,7 @@ properties:
   contact:
     type:           object
     title:          Contact Information
-    description:    The contact Information  
+    description:    The contact information which will be handed off to the notification server  
     oneOf:
                     - {$ref: 'irc-request.json#'}
                     - {$ref: 'email-request.json#'}
