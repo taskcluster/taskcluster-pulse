@@ -11,7 +11,6 @@
 
 const assert = require('assert');
 const rp = require('request-promise');
-const slugid = require('slugid');
 const _ = require('lodash');
 
 /**
@@ -29,6 +28,7 @@ class RabbitManager {
     assert(username, 'Must provide a rabbitmq username!');
     assert(password, 'Must provide a rabbitmq password!');
     assert(baseUrl, 'Must provide a rabbitmq baseUrl!');
+
     this.options = {
       baseUrl,
       auth: {
@@ -75,6 +75,8 @@ class RabbitManager {
    *     Other custom tags are also allowed. Tags cannot contain comma (',').
    */
   async createUser(name, password, tags) {
+    assert(name);
+    assert(password);
     assert(tags instanceof Array);
 
     let payload = {
@@ -94,6 +96,8 @@ class RabbitManager {
    * @param {string} name - Username.
    */
   async deleteUser(name) {
+    assert(name);
+
     let response = await this.request(`users/${name}`, {
       method: 'delete',
     });
@@ -110,6 +114,8 @@ class RabbitManager {
    * @param {Array.<string>} tags - A list of tags as the filtering criteria.
    */
   async usersWithAllTags(tags=[]) {
+    assert(tags instanceof Array);
+
     let userList = await this.users();
     return this._filterUsersWithTags(userList, tags, _.difference, _.eq);
   }
@@ -120,6 +126,8 @@ class RabbitManager {
    * @param {Array.<string>} tags - A list of tags as the filtering criteria.
    */
   async usersWithAnyTags(tags=[]) {
+    assert(tags instanceof Array);
+
     let userList = await this.users();
     return this._filterUsersWithTags(userList, tags, _.intersection, _.gt);
   }
@@ -140,6 +148,9 @@ class RabbitManager {
    * @default
    */
   async userPermissions(user, vhost='/') {
+    assert(user);
+    assert(vhost);
+
     vhost = encodeURIComponent(vhost);
     return await this.request(`permissions/${vhost}/${user}`);
   }
@@ -154,6 +165,12 @@ class RabbitManager {
    * @param {string} readPattern
    */
   async setUserPermissions(user, vhost, configurePattern, writePattern, readPattern) {
+    assert(user);
+    assert(vhost);
+    assert(configurePattern);
+    assert(writePattern);
+    assert(readPattern);
+
     let permissions = {
       configure: configurePattern,
       write: writePattern,
@@ -174,6 +191,9 @@ class RabbitManager {
    * @default
    */
   async deleteUserPermissions(user, vhost='/') {
+    assert(user);
+    assert(vhost);
+
     vhost = encodeURIComponent(vhost);
     await this.request(`permissions/${vhost}/${user}`, {method: 'delete'});
   }
@@ -181,15 +201,6 @@ class RabbitManager {
   /** Get a list of all queues. */
   async queues() {
     return await this.request('queues');
-  }
-
-  /** @private */
-  queueNameExists(name) {
-    if (!name) {
-      console.warn('Please provide a name for the queue!');
-      return false;
-    }
-    return true;
   }
 
   /** @private */
@@ -207,9 +218,9 @@ class RabbitManager {
    * @default
    */
   async queue(name, vhost='/') {
-    if (!this.queueNameExists(name)) {
-      return;
-    }
+    assert(name);
+    assert(vhost);
+
     const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
     return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`);
   }
@@ -227,9 +238,10 @@ class RabbitManager {
    * @param {string} vhost      - Virtual host (default is "/").
    */
   async createQueue(name, options={}, vhost='/') {
-    if (!this.queueNameExists(name)) {
-      return;
-    }
+    assert(name);
+    assert(options instanceof Object);
+    assert(vhost);
+
     const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
     return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {
       body: JSON.stringify(options),
@@ -245,9 +257,9 @@ class RabbitManager {
    * @default
    */
   async deleteQueue(name, vhost='/') {
-    if (!this.queueNameExists(name)) {
-      return;
-    }
+    assert(name);
+    assert(vhost);
+
     const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
     return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {method: 'delete'});
   }
@@ -268,9 +280,13 @@ class RabbitManager {
    * @param {string} vhost              - The virtual host where the queue resides (default is "/").
    */
   async messagesFromQueue(queueName, options={count: 5, requeue: true, encoding:'auto', truncate: 50000}, vhost='/') {
-    if (!this.queueNameExists(queueName)) {
-      return;
-    }
+    assert(name);
+    assert(options instanceof Object);
+    assert(options.count);
+    assert(options.requeue);
+    assert(options.encoding);
+    assert(vhost);
+
     const uriEncodedComponents = this.encodeURIComponents({queueName: queueName, vhost: vhost});
     return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.queueName}/get`, {
       body: JSON.stringify(options),
