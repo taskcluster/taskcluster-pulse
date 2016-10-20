@@ -150,8 +150,9 @@ suite('Rabbit Wrapper', () => {
   test('messagesFromQueue', async () => {
     const queueName = 'temp';
     const messages = ['some', 'messages'];
+    const delayBetweenMessages = 0;
     await helper.rabbit.createQueue(queueName);
-    helper.stressor.sendMessages(queueName, messages);
+    await helper.stressor.sendMessages(queueName, messages, delayBetweenMessages);
 
     const dequeuedMessages = await helper.rabbit.messagesFromQueue(queueName);
 
