@@ -34,7 +34,6 @@ defaults:
 
   stressor:
     amqpUrl:                  !env STRESSOR_AMQP_URL
-
 production:
   server:
     forceSSL:                 true

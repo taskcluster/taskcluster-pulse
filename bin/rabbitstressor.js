@@ -1,7 +1,6 @@
 /**
  * An interface to stress test RabbitMQ queues.
  */
-
 const amqp = require('amqplib');
 const assert = require('assert');
 
@@ -16,10 +15,23 @@ class RabbitStressor {
     this.channel = await this.connection.createChannel();
   }
 
-  sendMessages(queueName, messages) {
+  sendMessages(queueName, messages, delayBetweenMessages) {
     assert(messages instanceof Array);
     this.channel.assertQueue(queueName, {durable: false});
-    messages.forEach(message => this.channel.sendToQueue(queueName, new Buffer(message)));
+    return new Promise(resolve => this._sendMessagesOverInterval(queueName, messages, delayBetweenMessages, resolve));
+  }
+
+  _sendMessagesOverInterval(queueName, messages, delayBetweenMessages, resolvePromise) {
+    let index = 0;
+    const intervalId = setInterval(() => {
+      if (index >= messages.length) {
+        clearInterval(intervalId);
+        resolvePromise();
+        return;
+      }
+      this.channel.sendToQueue(queueName, new Buffer(messages[index]));
+      index++;
+    }, delayBetweenMessages);
   }
 }
 

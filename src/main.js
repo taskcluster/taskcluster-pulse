@@ -88,11 +88,6 @@ let load = loader({
     },
   },
 
-  stressor: {
-    requires: ['cfg'],
-    setup: ({cfg}) => new Stressor(cfg.stressor),
-  },
-
   api: {
     requires: ['cfg', 'monitor', 'validator', 'rabbit', 'Namespaces'],
     setup: ({cfg, monitor, validator, rabbit, Namespaces}) => v1.setup({
