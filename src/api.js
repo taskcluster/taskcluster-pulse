@@ -84,6 +84,15 @@ api.declare({
   let {namespace} = req.params; //the namespace requested
   let contact = req.body.contact; //the contact information
 
+  if (namespace.length>64 || !/^[A-Za-z-0-9_-]+$/.test(namespace)) {
+    return res.status(400).json({
+      message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
+      error: {
+        namespace:  req.params.namespace,
+      },
+    });
+  }
+
   //check for any entries that contain the requested namespace
   let data = await this.Namespaces.query({
     namespace:          this.Namespaces.op.equal(namespace),
