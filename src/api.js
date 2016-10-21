@@ -64,6 +64,25 @@ api.declare({
 });
 
 api.declare({
+/*Gets the list of exchanges in the rabbit cluster*/
+  method:   'get',
+  route:    '/exchanges',
+  name:     'exchanges',
+  title:    'Rabbit Exchanges',
+  //output:     'rabbit-overview.json',   
+  description: [
+    'An list of exchanges in the rabbit cluster',
+    '',
+    '**Warning** this api end-point is **not stable**.',
+  ].join('\n'),
+}, async function(req, res) {
+  res.reply(
+    this.rabbit.exchanges();
+  );
+});
+
+
+api.declare({
 /*Gets the namespace, creates one if one doesn't exist*/
   method:   'post',
   route:    '/namespace/:namespace',
