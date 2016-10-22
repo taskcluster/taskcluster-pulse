@@ -45,8 +45,12 @@ suite('API', () => {
   test('namespace - char limit under', () => {
     return helper.pulse.namespace('samplenamespace', {
       contact: {
-        method: 'irc',
-        id:     'ircusername',
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     });
   });
@@ -54,8 +58,12 @@ suite('API', () => {
   test('namespace - char limit over', () => {
     return helper.pulse.namespace('samplenamespacesamplenamespacesamplenamespacesamplenamespacesamplenamespace', {
       contact: {
-        method: 'irc',
-        id:     'ircusername',
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     }).then(function() {
       assert(false, 'This shouldn\'t have worked');
@@ -67,8 +75,12 @@ suite('API', () => {
   test('namespace - char invalid symbols', () => {
     return helper.pulse.namespace('sample%namespace', {
       contact: {
-        method: 'irc',
-        id:     'ircusername',
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     }).then(function() {
       assert(false, 'This shouldn\'t have worked');
