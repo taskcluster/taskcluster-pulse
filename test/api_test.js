@@ -3,7 +3,8 @@ suite('API', () => {
   let taskcluster = require('taskcluster-client');
   let helper = require('./helper');
   let slugid = require('slugid');
-
+  let _           = require('lodash');
+  
   test('ping', () => {
     return helper.pulse.ping();
   });
@@ -150,8 +151,8 @@ suite('API', () => {
 
     await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
 
-    var count = 0;
-    var name = '';
+    let count = 0;
+    let name = '';
     await helper.Namespaces.scan({}, 
       {
         limit:            250, // max number of concurrent delete operations
@@ -165,5 +166,37 @@ suite('API', () => {
     assert(name==='e2', 'wrong namespace removed');
   });
 
+  test('"namespace" idempotency - return same namespace', async () => { 
+    let a = await helper.pulse.namespace('testname', { 
+      contact: {
+        method: 'irc',
+        id:     'ircusername',
+      },
+    });
+    let b = await helper.pulse.namespace('testname', {
+      contact: {
+        method: 'irc',
+        id:     'ircusername',
+      },
+    });
+    assert(_.isEqual(a, b)); 
+  });
+  
+  test('"namespace" idempotency - entry creation', async () => {
+    for (let i = 0; i < 10; i++) {
+      await helper.pulse.namespace('testname', {
+        contact: {
+          method: 'irc',
+          id:     'ircusername',
+        },	
+      });
+    } 
+    let count = 0;
+    await helper.Namespaces.scan({}, 
+      {
+        limit:            250, 
+        handler:          ns => count++,
+      });
+    assert.equal(count, 1);
+  });
 });
-
