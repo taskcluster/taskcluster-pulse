@@ -115,6 +115,7 @@ suite('Rabbit Wrapper', () => {
     await helper.rabbit.createQueue(queueName);
 
     const queues = await helper.rabbit.queues();
+
     assert(queues instanceof Array);
     assert(_.has(queues[0], 'memory'));
     assert(_.has(queues[0], 'messages'));
@@ -144,5 +145,25 @@ suite('Rabbit Wrapper', () => {
     } catch (error) {
       assert.equal(error.statusCode, 404);
     }
+  });
+
+  test('messagesFromQueue', async () => {
+    const queueName = 'temp';
+    const messages = ['some', 'messages'];
+    const delayBetweenMessages = 0;
+    await helper.rabbit.createQueue(queueName);
+    await helper.stressor.sendMessages(queueName, messages, delayBetweenMessages);
+
+    const dequeuedMessages = await helper.rabbit.messagesFromQueue(queueName);
+
+    assert(dequeuedMessages instanceof Array);
+    assert(_.has(dequeuedMessages[0], 'payload_bytes'));
+    assert(_.has(dequeuedMessages[0], 'redelivered'));
+    assert(_.has(dequeuedMessages[0], 'exchange'));
+    assert(_.has(dequeuedMessages[0], 'routing_key'));
+    assert(_.has(dequeuedMessages[0], 'message_count'));
+    assert(_.has(dequeuedMessages[0], 'properties'));
+
+    await helper.rabbit.deleteQueue(queueName);
   });
 });

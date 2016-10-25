@@ -6,6 +6,7 @@ let monitor           = require('taskcluster-lib-monitor');
 let validator         = require('taskcluster-lib-validate');
 let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
+let Stressor          = require('../.bin/rabbitstressor');
 let v1                = require('./api');
 let Rabbit            = require('./rabbitmanager');
 let data              = require('./data');
@@ -60,12 +61,12 @@ let load = loader({
     setup: async ({cfg, monitor}) => {
       var ns = data.Namespace.setup({
         account: cfg.azure.account,
-        table: cfg.app.namespaceTableName, 
+        table: cfg.app.namespaceTableName,
         credentials: cfg.taskcluster.credentials,
         monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
       });
 
-      await ns.ensureTable(); //create the table 
+      await ns.ensureTable(); //create the table
       return ns;
     },
   },
@@ -85,7 +86,6 @@ let load = loader({
       monitor.stopResourceMonitoring();
       await monitor.flush();
     },
-
   },
 
   api: {

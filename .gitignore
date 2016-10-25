@@ -1,6 +1,7 @@
 /user-config.yml
 /lib
 /.test
+/.bin
 /node_modules
 
 # Vim

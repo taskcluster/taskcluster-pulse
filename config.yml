@@ -30,8 +30,10 @@ defaults:
     baseUrl:                  !env RABBIT_BASE_URL
 
   azure:
-    account:        !env AZURE_ACCOUNT_NAME
+    account:                  !env AZURE_ACCOUNT_NAME
 
+  stressor:
+    amqpUrl:                  !env STRESSOR_AMQP_URL
 production:
   server:
     forceSSL:                 true
@@ -39,9 +41,6 @@ production:
     env:                      'production'
 
 test:
-  app:
-    namespacesExpirationDelay: '0 hours'
-
   server:
     publicUrl:        http://localhost:60403
     port:             60403
@@ -52,4 +51,4 @@ test:
   azure:
     account:  "inMemory"
 
-   
+

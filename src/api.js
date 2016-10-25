@@ -65,10 +65,11 @@ api.declare({
 
 /*Gets the namespace, creates one if one doesn't exist*/
 api.declare({
-  method:   'get',
+  method:   'post',
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Create a namespace',	
+  input:    'namespace-request.json',
   scopes:   [
     ['pulse:namespace:<namespace>'],
   ],
@@ -80,11 +81,23 @@ api.declare({
   ].join('\n'),
 }, async function(req, res) {
   let {namespace} = req.params;
-  let newNamespace = await setNamespace(this, namespace);
+  let contact = req.body.contact; //the contact information
+
+  if (namespace.length>64 || !/^[A-Za-z-0-9_-]+$/.test(namespace)) {
+    return res.status(400).json({
+      message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
+      error: {
+        namespace:  req.params.namespace,
+      },
+    });
+  }
+ 
+  let newNamespace = await setNamespace(this, namespace, contact);
   res.reply({
-    namespace: newNamespace.namespace,
-    username: newNamespace.username,
-    password: newNamespace.password,
+    namespace:  newNamespace.namespace,
+    username:   newNamespace.username,
+    password:   newNamespace.password,
+    contact:    newNamespace.contact,
   });
 });
 
@@ -92,15 +105,16 @@ api.declare({
  * Attempt to create a new namespace entry and associated Rabbit user.
  * If the requested namespace exists, return it.
  */
-async function setNamespace(context, namespace) {
+async function setNamespace(context, namespace, contact) {
   let newNamespace; 
   try {
     newNamespace = await context.Namespaces.create({
-      namespace: namespace,
-      username: slugid.v4(),
-      password: slugid.v4(),
-      created:  new Date(),
-      expires:  taskcluster.fromNow('1 day'),
+      namespace:  namespace,
+      username:   slugid.v4(),
+      password:   slugid.v4(),
+      created:    new Date(),
+      expires:    taskcluster.fromNow('1 day'),
+      contact:    contact,
     });
     
     await context.rabbit.setUserPermissions(

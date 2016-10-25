@@ -4,3 +4,6 @@ defaults:
     username: 'guest'
     password: 'guest'
     baseUrl:  'http://localhost:15672/api'
+
+  stressor:
+    amqpUrl:  'amqp://localhost'
