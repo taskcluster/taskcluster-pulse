@@ -74,7 +74,7 @@ class RabbitManager {
     return await this.request('users');
   }
 
-  async exchanges(){
+  async exchanges() {
     return await this.request('exchanges');
   }
 

@@ -77,10 +77,14 @@ api.declare({
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
-    this.rabbit.exchanges();
+    _.map(
+      await this.rabbit.exchanges(),
+      function(elem) {
+        return elem.name;
+      }
+    )
   );
 });
-
 
 api.declare({
 /*Gets the namespace, creates one if one doesn't exist*/

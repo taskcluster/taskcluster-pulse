@@ -11,6 +11,10 @@ suite('API', () => {
   test('overview', () => {
     return helper.pulse.overview();
   });
+
+  test('exchanges', () => {
+    return helper.pulse.exchanges();
+  });
   
   test('namespace', () => {
     return helper.pulse.namespace('samplenamespace', {
