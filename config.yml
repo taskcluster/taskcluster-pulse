@@ -33,7 +33,12 @@ defaults:
     account:                  !env AZURE_ACCOUNT_NAME
 
   stressor:
+    payloadSize:              !env STRESSOR_PAYLOAD_SIZE
+    uploadRate:               !env STRESSOR_UPLOAD_RATE
+    messageCount:             !env STRESSOR_MESSAGE_COUNT
     amqpUrl:                  !env STRESSOR_AMQP_URL
+    targetQueue:              !env STRESSOR_TARGET_QUEUE
+
 production:
   server:
     forceSSL:                 true

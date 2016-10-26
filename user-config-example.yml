@@ -6,4 +6,8 @@ defaults:
     baseUrl:  'http://localhost:15672/api'
 
   stressor:
-    amqpUrl:  'amqp://localhost'
+    payloadSize: 20
+    uploadRate: 50
+    messageCount: 5
+    amqpUrl: 'amqp://localhost'
+    targetQueue: 'stressor queue'

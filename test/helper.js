@@ -45,7 +45,7 @@ mocha.before(async () => {
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
-  helper.stressor = new Stressor(cfg.stressor);
+  helper.stressor = new Stressor(cfg.stressor, helper.rabbit);
 });
 
 mocha.after(async () => {
