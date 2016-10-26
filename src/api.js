@@ -24,8 +24,8 @@ let api = new API({
 
 module.exports = api;
 
-api.declare({
 /*Get an overview of the rabbit cluster*/
+api.declare({
   method:   'get',
   route:    '/overview',
   name:     'overview',
@@ -45,8 +45,8 @@ api.declare({
   );
 });
 
-api.declare({
 /*Gets the namespace, creates one if one doesn't exist*/
+api.declare({
   method:   'post',
   route:    '/namespace/:namespace',
   name:     'namespace',
@@ -62,11 +62,10 @@ api.declare({
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
- 
-  let {namespace} = req.params; //the namespace requested
+  let {namespace} = req.params;
   let contact = req.body.contact; //the contact information
 
-  if (namespace.length>64 || !/^[A-Za-z-0-9_-]+$/.test(namespace)) {
+  if (namespace.length>64 || !/^[A-Za-z0-9_-]+$/.test(namespace)) {
     return res.status(400).json({
       message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
       error: {
@@ -74,47 +73,44 @@ api.declare({
       },
     });
   }
-
-  //check for any entries that contain the requested namespace
-  let data = await this.Namespaces.query({
-    namespace:          this.Namespaces.op.equal(namespace),
-  }, {
-    limit:            250, 
-  }
-  );
-
-  let newNamespace; //the namespace that will be returned in the response
-
-  if (data.entries.length === 0) {
-    //create a new entry if none exists 
-    
-    newNamespace = await this.Namespaces.create({
-      namespace: namespace,
-      username: slugid.v4(),
-      password: slugid.v4(),
-      created:  new Date(),
-      expires:  taskcluster.fromNow('1 day'),
-      contact:  contact,
-    });
-
-    await this.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']);
-
-  } else if (data.entries.length === 1) { 
-    //if a namespace already exists, use the loaded username & password
-    newNamespace = data.entries[0]; 
-  } else {
-    throw new Error('Exacly one namespace must exist');
-  }
-
-  res.reply(
-    //return the namespace entity
-    {
-      namespace: newNamespace.namespace,
-      username: newNamespace.username,
-      password: newNamespace.password,
-      contact:  newNamespace.contact,
-    }
-   
-  );
-
+ 
+  let newNamespace = await setNamespace(this, namespace, contact);
+  res.reply({
+    namespace:  newNamespace.namespace,
+    username:   newNamespace.username,
+    password:   newNamespace.password,
+    contact:    newNamespace.contact,
+  });
 });
+
+/* 
+ * Attempt to create a new namespace entry and associated Rabbit user.
+ * If the requested namespace exists, return it.
+ */
+async function setNamespace(context, namespace, contact) {
+  let newNamespace; 
+  try {
+    newNamespace = await context.Namespaces.create({
+      namespace:  namespace,
+      username:   slugid.v4(),
+      password:   slugid.v4(),
+      created:    new Date(),
+      expires:    taskcluster.fromNow('1 day'),
+      contact:    contact,
+    });
+    
+    await context.rabbit.setUserPermissions(
+      user = await context.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
+      vhost             = '/',
+      configurePattern  = '',
+      writePattern      = `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,
+      readPattern       = 'taskcluster/exchanges/.*',
+      ); 
+  } catch (err) {
+    if (err.code !== 'EntityAlreadyExists') {
+      throw err;
+    }
+    newNamespace = await context.Namespaces.load({namespace: namespace});
+  } 
+  return newNamespace;
+}
