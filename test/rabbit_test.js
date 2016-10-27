@@ -92,13 +92,14 @@ suite('Rabbit Wrapper', () => {
     await helper.rabbit.deleteUser(name5);
   });
 
-  test('userPermissions', async () => {
+  test('userPermissions_singleVhost', async () => {
     const name = slugid.v4();
     await helper.rabbit.createUser(name, name, []);
     await helper.rabbit.setUserPermissions(name, '/', '.*', '.*', '.*');
     let permissions = await helper.rabbit.userPermissions(name, '/');
     assert(_.has(permissions, 'user'));
     assert(_.has(permissions, 'vhost'));
+    // Delete the permission and test the error case.
     await helper.rabbit.deleteUserPermissions(name, '/');
     try {
       await helper.rabbit.userPermissions(name, '/');
@@ -106,6 +107,17 @@ suite('Rabbit Wrapper', () => {
     } catch (error) {
       expect(error.statusCode).to.equal(404);
     }
+    await helper.rabbit.deleteUser(name);
+  });
+
+  test('userPermissions_allVhosts', async () => {
+    const name = slugid.v4();
+    await helper.rabbit.createUser(name, name, []);
+    await helper.rabbit.setUserPermissions(name, '/', '.*', '.*', '.*');
+    let permissions = await helper.rabbit.userPermissions(name);
+    assert(permissions.length > 0);
+    assert(_.has(permissions[0], 'user'));
+    assert(_.has(permissions[0], 'vhost'));
     await helper.rabbit.deleteUser(name);
   });
 
