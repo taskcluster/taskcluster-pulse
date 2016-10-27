@@ -1,9 +1,45 @@
 suite('Rabbit Wrapper', () => {
-  const expect = require('chai').expect;
   const assert = require('assert');
   const slugid = require('slugid');
   const _ = require('lodash');
   const helper = require('./helper');
+
+  let usernames = [];
+  let queuenames = [];
+
+  setup(() => {
+    // Generate a list of 5 user names to be used by test cases.  Store the
+    // names so that we can make sure they are deleted in teardown.
+    // (Names are random to avoid any potential collisions.)
+    usernames = [];
+    for (let i = 0; i < 5; i++) {
+      usernames.push(slugid.v4());
+    }
+    // Similarly for queue names.
+    queuenames = [];
+    for (let i = 0; i < 1; i++) {
+      queuenames.push(slugid.v4());
+    }
+  });
+
+  teardown(async () => {
+    // TODO: directly send request to RabbitMQ APIs instead of calling these
+    // methods to avoid circularity.
+    for (let username of usernames) {
+      try {
+        await helper.rabbit.deleteUser(username);
+      } catch (e) {
+        // Intentianlly do nothing since this user might not have been created.
+      }
+    }
+    for (let queuename of queuenames) {
+      try {
+        await helper.rabbit.deleteQuee(queuename);
+      } catch (e) {
+        // Intentianlly do nothing since this queue might not have been created.
+      }
+    }
+  });
 
   test('overview', async () => {
     const overview = await helper.rabbit.overview();
@@ -18,15 +54,14 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('createAndDeleteUser', async () => {
-    const name = slugid.v4();
-    await helper.rabbit.createUser(name, name, []);
-    await helper.rabbit.deleteUser(name);
+    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.deleteUser(usernames[0]);
   });
 
   test('deleteUserException', async () => {
     try {
-      await helper.rabbit.deleteUser('not a user');
-      assert.equal(true, false);
+      await helper.rabbit.deleteUser(usernames[0]);
+      assert(false);
     } catch (error) {
       assert.equal(error.statusCode, 404);
     }
@@ -35,138 +70,110 @@ suite('Rabbit Wrapper', () => {
   test('users', async () => {
     const usersList = await helper.rabbit.users();
     assert(usersList instanceof Array);
+    // At least we have the user used for connecting to the management API.
+    assert(usersList.length > 0);
     assert(_.has(usersList[0], 'name'));
     assert(_.has(usersList[0], 'tags'));
   });
 
   test('usersWithAllTags', async () => {
-    // Setup
-    const name1 = 'A';
-    const name2 = 'B';
-    const name3 = 'C';
-    const name4 = 'D';
-    await helper.rabbit.createUser(name1, `${name1}password`, ['foo', 'bar']);
-    await helper.rabbit.createUser(name2, `${name2}password`, ['foo']);
-    await helper.rabbit.createUser(name3, `${name3}password`, ['bar']);
-    await helper.rabbit.createUser(name4, `${name4}password`, ['bar', 'foo']);
+    await helper.rabbit.createUser(usernames[0], 'dummy', ['foo', 'bar']);
+    await helper.rabbit.createUser(usernames[1], 'dummy', ['foo']);
+    await helper.rabbit.createUser(usernames[2], 'dummy', ['bar']);
+    await helper.rabbit.createUser(usernames[3], 'dummy', ['bar', 'foo']);
 
     const tags = ['foo', 'bar'];
     const usersWithAllTags = await helper.rabbit.usersWithAllTags(tags);
 
     assert(usersWithAllTags.length === 2);
-    assert(_.find(usersWithAllTags, {tags: 'foo,bar'}));
-    assert(_.find(usersWithAllTags, {tags: 'bar,foo'}));
-
-    // Cleanup
-    await helper.rabbit.deleteUser(name1);
-    await helper.rabbit.deleteUser(name2);
-    await helper.rabbit.deleteUser(name3);
-    await helper.rabbit.deleteUser(name4);
+    assert(_.find(usersWithAllTags, {name: usernames[0]}));
+    assert(_.find(usersWithAllTags, {name: usernames[3]}));
   });
 
   test('usersWithAnyTags', async () => {
-    // Setup
-    const name1 = 'E';
-    const name2 = 'F';
-    const name3 = 'G';
-    const name4 = 'H';
-    const name5 = 'I';
-    await helper.rabbit.createUser(name1, `${name1}password`, ['moo', 'tar']);
-    await helper.rabbit.createUser(name2, `${name2}password`, ['moo']);
-    await helper.rabbit.createUser(name3, `${name3}password`, ['tar']);
-    await helper.rabbit.createUser(name4, `${name4}password`, ['tar', 'moo']);
-    await helper.rabbit.createUser(name5, `${name5}password`, ['car', 'moo']);
+    await helper.rabbit.createUser(usernames[0], 'dummy', ['moo', 'tar']);
+    await helper.rabbit.createUser(usernames[1], 'dummy', ['moo']);
+    await helper.rabbit.createUser(usernames[2], 'dummy', ['tar']);
+    await helper.rabbit.createUser(usernames[3], 'dummy', ['tar', 'moo']);
+    await helper.rabbit.createUser(usernames[4], 'dummy', ['car', 'moo']);
 
     const tags = ['tar', 'car'];
     const usersWithAnyTags = await helper.rabbit.usersWithAnyTags(tags);
 
     assert(usersWithAnyTags.length === 4);
-    assert.equal(usersWithAnyTags.filter(user => user.tags.includes('tar')).length, 3);
-    assert.equal(usersWithAnyTags.filter(user => user.tags.includes('car')).length, 1);
-
-    // Cleanup
-    await helper.rabbit.deleteUser(name1);
-    await helper.rabbit.deleteUser(name2);
-    await helper.rabbit.deleteUser(name3);
-    await helper.rabbit.deleteUser(name4);
-    await helper.rabbit.deleteUser(name5);
+    assert(_.find(usersWithAnyTags, {name: usernames[0]}));
+    assert(_.find(usersWithAnyTags, {name: usernames[2]}));
+    assert(_.find(usersWithAnyTags, {name: usernames[3]}));
+    assert(_.find(usersWithAnyTags, {name: usernames[4]}));
   });
 
   test('userPermissions_singleVhost', async () => {
-    const name = slugid.v4();
-    await helper.rabbit.createUser(name, name, []);
-    await helper.rabbit.setUserPermissions(name, '/', '.*', '.*', '.*');
-    let permissions = await helper.rabbit.userPermissions(name, '/');
+    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.setUserPermissions(usernames[0], '/', '.*', '.*', '.*');
+
+    let permissions = await helper.rabbit.userPermissions(usernames[0], '/');
     assert(_.has(permissions, 'user'));
     assert(_.has(permissions, 'vhost'));
     // Delete the permission and test the error case.
-    await helper.rabbit.deleteUserPermissions(name, '/');
+    await helper.rabbit.deleteUserPermissions(usernames[0], '/');
     try {
-      await helper.rabbit.userPermissions(name, '/');
+      await helper.rabbit.userPermissions(usernames[0], '/');
       assert(false);
     } catch (error) {
-      expect(error.statusCode).to.equal(404);
+      assert.equal(error.statusCode, 404);
     }
-    await helper.rabbit.deleteUser(name);
   });
 
   test('userPermissions_allVhosts', async () => {
-    const name = slugid.v4();
-    await helper.rabbit.createUser(name, name, []);
-    await helper.rabbit.setUserPermissions(name, '/', '.*', '.*', '.*');
-    let permissions = await helper.rabbit.userPermissions(name);
+    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.setUserPermissions(usernames[0], '/', '.*', '.*', '.*');
+
+    let permissions = await helper.rabbit.userPermissions(usernames[0]);
+    assert(permissions instanceof Array);
     assert(permissions.length > 0);
     assert(_.has(permissions[0], 'user'));
     assert(_.has(permissions[0], 'vhost'));
-    await helper.rabbit.deleteUser(name);
   });
 
   test('queues', async () => {
-    // Setup
-    const queueName = 'Temp queue';
-    await helper.rabbit.createQueue(queueName);
+    await helper.rabbit.createQueue(queuenames[0]);
 
     const queues = await helper.rabbit.queues();
 
     assert(queues instanceof Array);
+    assert(queues.length > 0);
     assert(_.has(queues[0], 'memory'));
     assert(_.has(queues[0], 'messages'));
     assert(_.has(queues[0], 'messages_details'));
     assert(_.has(queues[0], 'messages_ready'));
     assert(_.has(queues[0], 'name'));
-
-    // Teardown
-    await helper.rabbit.deleteQueue(queueName);
   });
 
   test('createGetDeleteQueue', async () => {
-    const queueName = 'My message queue';
-    await helper.rabbit.createQueue(queueName);
+    await helper.rabbit.createQueue(queuenames[0]);
 
-    const queue = await helper.rabbit.queue(queueName);
-    assert.equal(queue.name, queueName);
+    const queue = await helper.rabbit.queue(queuenames[0]);
+    assert.equal(queue.name, queuenames[0]);
 
-    await helper.rabbit.deleteQueue(queueName);
+    await helper.rabbit.deleteQueue(queuenames[0]);
   });
 
   test('deleteQueueNotFoundException', async () => {
     try {
-      const queueName = 'not a queue';
-      await helper.rabbit.deleteQueue(queueName);
-      assert.equal(true, false);
+      await helper.rabbit.deleteQueue(queuenames[0]);
+      assert(false);
     } catch (error) {
       assert.equal(error.statusCode, 404);
     }
   });
 
   test('messagesFromQueue', async () => {
-    const queueName = 'temp';
     const messages = ['some', 'messages'];
     const delayBetweenMessages = 0;
-    await helper.rabbit.createQueue(queueName);
-    await helper.stressor.sendMessages(queueName, messages, delayBetweenMessages);
+    await helper.rabbit.createQueue(queuenames[0]);
+    await helper.stressor.sendMessages(queuenames[0], messages, delayBetweenMessages);
 
-    const dequeuedMessages = await helper.rabbit.messagesFromQueue(queueName);
+    const dequeuedMessages = await helper.rabbit.messagesFromQueue(queuenames[0]);
 
     assert(dequeuedMessages instanceof Array);
     assert(_.has(dequeuedMessages[0], 'payload_bytes'));
@@ -175,7 +182,5 @@ suite('Rabbit Wrapper', () => {
     assert(_.has(dequeuedMessages[0], 'routing_key'));
     assert(_.has(dequeuedMessages[0], 'message_count'));
     assert(_.has(dequeuedMessages[0], 'properties'));
-
-    await helper.rabbit.deleteQueue(queueName);
   });
 });
