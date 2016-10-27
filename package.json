@@ -6,6 +6,7 @@
   "license": "MPL-2.0",
   "scripts": {
     "compile": "babel-compile -p taskcluster bin:.bin src:lib test:.test",
+    "jsdoc": "jsdoc -c docs/jsdoc-config.json src/rabbitmanager.js --destination docs/jsdoc/",
     "test": "mocha .test/lint.js .test/*_test.js",
     "pretest": "npm run compile",
     "install": "npm run compile"
@@ -46,6 +47,8 @@
     "typed-env-config": "^1.1.0"
   },
   "devDependencies": {
+    "jsdoc": "^3.4.2",
+    "jsdoc-strip-async-await": "^0.1.0",
     "mocha": "^3.0.2"
   },
   "engines": {
