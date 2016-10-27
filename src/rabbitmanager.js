@@ -74,6 +74,10 @@ class RabbitManager {
     return await this.request('users');
   }
 
+  async exchanges() {
+    return await this.request('exchanges');
+  }
+
   async usersWithAllTags(tags=[]) {
     let userList = await this.users();
     return this._filterUsersWithTags(userList, tags, _.difference, _.eq);
