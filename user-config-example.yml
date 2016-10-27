@@ -11,3 +11,7 @@ defaults:
     messageCount: 5
     amqpUrl: 'amqp://localhost'
     targetQueue: 'stressor queue'
+
+  monitor:
+    amqpUrl: 'amqp://localhost'
+    refreshInterval: 1000

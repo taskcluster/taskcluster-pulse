@@ -10,6 +10,7 @@ let Stressor    = require('../.bin/rabbitstressor');
 let api         = require('../lib/api');
 let load        = require('../lib/main');
 let Rabbit      = require('../lib/rabbitmanager');
+let Monitor     = require('../lib/rabbitmonitor');
 let data        = require('../lib/data');
 
 // Load configuration
@@ -45,7 +46,8 @@ mocha.before(async () => {
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
-  helper.stressor = new Stressor(cfg.stressor, helper.rabbit);
+  helper.stressor = new Stressor(cfg.stressor, new Rabbit(cfg.rabbit));
+  helper.monitor = new Monitor(cfg.monitor, new Rabbit(cfg.rabbit));
 });
 
 mocha.after(async () => {

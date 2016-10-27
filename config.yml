@@ -39,6 +39,10 @@ defaults:
     amqpUrl:                  !env STRESSOR_AMQP_URL
     targetQueue:              !env STRESSOR_TARGET_QUEUE
 
+  monitor:
+    amqpUrl:                  !env MONITOR_AMQP_URL
+    refreshInterval:          !env MONITOR_REFRESH_INTERVAL
+
 production:
   server:
     forceSSL:                 true
