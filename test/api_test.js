@@ -2,9 +2,25 @@ suite('API', () => {
   let assert = require('assert');
   let taskcluster = require('taskcluster-client');
   let helper = require('./helper');
+  let load = require('../lib/main');
   let slugid = require('slugid');
-  let _           = require('lodash');
+  let _ = require('lodash');
   
+  let namespaces;
+
+  setup(async () => {
+    //set up the namespace entities
+    namespaces = await load('Namespaces', {profile: 'test', process: 'test'});
+
+    //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
+    await namespaces.ensureTable();
+  });
+
+  teardown(async () => {
+    //remove the namespace entities
+    await namespaces.removeTable();
+  });
+
   test('ping', () => {
     return helper.pulse.ping();
   });
@@ -59,10 +75,10 @@ suite('API', () => {
 
   /////////////////////todo: use continuation tokens for all namespace scan methods
   test('expire namespace - no entries', async () => {
-    await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
+    await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    await helper.Namespaces.scan({}, 
+    await namespaces.scan({}, 
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
@@ -74,7 +90,7 @@ suite('API', () => {
   });
 
   test('expire namespace - one entry', async () => {
-    await helper.Namespaces.create({
+    await namespaces.create({
       namespace: 'e1',
       username: slugid.v4(),
       password: slugid.v4(),
@@ -83,10 +99,10 @@ suite('API', () => {
       contact:  {},
     });
 
-    await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
+    await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    await helper.Namespaces.scan({}, 
+    await namespaces.scan({}, 
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
@@ -98,7 +114,7 @@ suite('API', () => {
   });
 
   test('expire namespace - two entries', async () => {
-    await helper.Namespaces.create({
+    await namespaces.create({
       namespace: 'e1',
       username: slugid.v4(),
       password: slugid.v4(),
@@ -107,7 +123,7 @@ suite('API', () => {
       contact:  {},
     });
 
-    await helper.Namespaces.create({
+    await namespaces.create({
       namespace: 'e2',
       username: slugid.v4(),
       password: slugid.v4(),
@@ -116,10 +132,10 @@ suite('API', () => {
       contact:  {},
     });
 
-    await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
+    await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    await helper.Namespaces.scan({}, 
+    await namespaces.scan({}, 
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
@@ -131,7 +147,7 @@ suite('API', () => {
   });
 
   test('expire namespace - one of two entries', async () => {
-    await helper.Namespaces.create({
+    await namespaces.create({
       namespace: 'e1',
       username: slugid.v4(),
       password: slugid.v4(),
@@ -140,7 +156,7 @@ suite('API', () => {
       contact:  {},
     });
 
-    await helper.Namespaces.create({
+    await namespaces.create({
       namespace: 'e2',
       username: slugid.v4(),
       password: slugid.v4(),
@@ -149,11 +165,11 @@ suite('API', () => {
       contact:  {},
     });
 
-    await helper.Namespaces.expire(taskcluster.fromNow('0 hours'));
+    await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     let count = 0;
     let name = '';
-    await helper.Namespaces.scan({}, 
+    await namespaces.scan({}, 
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
@@ -192,7 +208,7 @@ suite('API', () => {
       });
     } 
     let count = 0;
-    await helper.Namespaces.scan({}, 
+    await namespaces.scan({}, 
       {
         limit:            250, 
         handler:          ns => count++,

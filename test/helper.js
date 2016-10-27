@@ -52,16 +52,3 @@ mocha.after(async () => {
   await webServer.terminate();
   testing.fakeauth.stop();
 });
-
-mocha.beforeEach(async () =>{
-  //set up the namespace entities
-  helper.Namespaces = await load('Namespaces', {profile: 'test', process: 'test'});
-
-  //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
-  await helper.Namespaces.ensureTable();
-});
-
-mocha.afterEach(async () => {
-  //remove the namespace entities
-  await  helper.Namespaces.removeTable();
-});
