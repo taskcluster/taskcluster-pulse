@@ -86,7 +86,6 @@ api.declare({
   );
 });
 
-
 /*Gets the namespace, creates one if one doesn't exist*/
 api.declare({
   method:   'post',
