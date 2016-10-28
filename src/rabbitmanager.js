@@ -15,7 +15,7 @@ const _ = require('lodash');
 
 /**
  * Wrapper class for RabbitMQ management HTTP API
- * @class
+ * @class RabbitManager
  */
 class RabbitManager {
   /**
@@ -124,7 +124,7 @@ class RabbitManager {
     assert(tags instanceof Array);
 
     let userList = await this.users();
-    return this._filterUsersWithTags(userList, tags, _.difference, _.eq);
+    return this.filterUsersWithTags(userList, tags, _.difference, _.eq);
   }
 
   /**
@@ -136,11 +136,11 @@ class RabbitManager {
     assert(tags instanceof Array);
 
     let userList = await this.users();
-    return this._filterUsersWithTags(userList, tags, _.intersection, _.gt);
+    return this.filterUsersWithTags(userList, tags, _.intersection, _.gt);
   }
 
-  /** @prviate */
-  _filterUsersWithTags(userList, tags, combiner, comparator) {
+  /** @private */
+  filterUsersWithTags(userList, tags, combiner, comparator) {
     return userList.filter(user => {
       const userListTokens = user.tags.split(',');
       return comparator(combiner(tags, userListTokens).length, 0);
