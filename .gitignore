@@ -3,6 +3,7 @@
 /.test
 /.bin
 /node_modules
+/docs/jsdoc
 
 # Vim
 *~
