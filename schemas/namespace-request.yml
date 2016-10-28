@@ -7,16 +7,10 @@ properties:
   contact:
     type:           object
     title:          Contact Information
-    description:    The contact Information
-    properties:
-        method:
-            type:           string
-            title:          Contact Method
-            description:    "The contact method (eg. irc, email)"
-        id:
-            type:           string
-            title:          The contact id
-            description:    "The contact id (eg. username, email address)"
+    description:    The contact information which will be handed off to the notification service  
+    oneOf:
+                    - {$ref: 'irc-request.json#'}
+                    - {$ref: 'email-request.json#'}
 additionalProperties: false
 required:
   - contact
