@@ -201,14 +201,22 @@ suite('API', () => {
   test('"namespace" idempotency - return same namespace', async () => { 
     let a = await helper.pulse.namespace('testname', { 
       contact: {
-        method: 'irc',
-        id:     'ircusername',
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     });
     let b = await helper.pulse.namespace('testname', {
       contact: {
-        method: 'irc',
-        id:     'ircusername',
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     });
     assert(_.isEqual(a, b)); 
@@ -218,8 +226,12 @@ suite('API', () => {
     for (let i = 0; i < 10; i++) {
       await helper.pulse.namespace('testname', {
         contact: {
-          method: 'irc',
-          id:     'ircusername',
+          method: 'email',
+          payload: {
+            address: 'a@a.com',
+            subject: 'subject',
+            content: 'content',
+          },
         },	
       });
     } 
