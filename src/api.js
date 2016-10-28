@@ -24,7 +24,9 @@ let api = new API({
 
 module.exports = api;
 
-/*Get an overview of the rabbit cluster*/
+/**
+ * Gets an overview of the rabbit cluster
+ */
 api.declare({
   method:   'get',
   route:    '/overview',
@@ -45,7 +47,31 @@ api.declare({
   );
 });
 
-/*Gets the namespace, creates one if one doesn't exist*/
+/**
+ * Gets the list of exchanges in the rabbit cluster
+ */
+api.declare({
+  method:   'get',
+  route:    '/exchanges',
+  name:     'exchanges',
+  title:    'Rabbit Exchanges',  
+  description: [
+    'A list of exchanges in the rabbit cluster',
+    '',
+    '**Warning** this api end-point is **not stable**.',
+  ].join('\n'),
+}, async function(req, res) {
+  res.reply(
+    _.map(
+      await this.rabbit.exchanges(),
+      elem => elem.name
+    )
+  );
+});
+
+/**
+ * Gets the namespace, creates one if one doesn't exist
+ */
 api.declare({
   method:   'post',
   route:    '/namespace/:namespace',

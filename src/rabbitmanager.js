@@ -109,6 +109,13 @@ class RabbitManager {
   }
 
   /**
+   * Get a list of all exchanges
+   */
+  async exchanges() {
+    return await this.request('exchanges');
+  }
+
+  /**
    * Get a list of users who have ALL the specified tags.
    *
    * @param {Array.<string>} tags - A list of tags as the filtering criteria.

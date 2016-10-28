@@ -76,6 +76,12 @@ suite('Rabbit Wrapper', () => {
     assert(_.has(usersList[0], 'tags'));
   });
 
+  test('exchanges', async () => {
+    const exchanges = await helper.rabbit.exchanges();
+    assert(exchanges instanceof Array);
+    assert(_.has(exchanges[0], 'name'));
+  });
+
   test('usersWithAllTags', async () => {
     await helper.rabbit.createUser(usernames[0], 'dummy', ['foo', 'bar']);
     await helper.rabbit.createUser(usernames[1], 'dummy', ['foo']);
