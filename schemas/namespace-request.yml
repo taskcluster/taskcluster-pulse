@@ -9,8 +9,8 @@ properties:
     title:          Contact Information
     description:    The contact information which will be handed off to the notification service  
     oneOf:
-                    - {$ref: 'irc-request.json#'}
-                    - {$ref: 'email-request.json#'}
+                    - {$ref: 'http://schemas.taskcluster.net/pulse/v1/irc-request.json#'}
+                    - {$ref: 'http://schemas.taskcluster.net/pulse/v1/email-request.json#'}
 additionalProperties: false
 required:
   - contact
