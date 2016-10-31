@@ -5,6 +5,7 @@ suite('Rabbit Stressor', () => {
 
   test('connect', async () => {
     await helper.stressor.connect('amqp://localhost');
+    helper.stressor.disconnect();
   });
 
   test('connectError', async () => {
@@ -21,12 +22,14 @@ suite('Rabbit Stressor', () => {
     const messages = ['some', 'string', 'messages', 'being', 'sent'];
 
     await helper.rabbit.createQueue(queueName);
+    await helper.stressor.connect();
     await helper.stressor.sendMessages(queueName, messages, delayBetweenMessages);
 
     const messagesFromQueue = await helper.rabbit.messagesFromQueue(queueName);
     assert(messagesFromQueue.length > 0, 'Did not receive any messages from queue');
 
     await helper.rabbit.deleteQueue(queueName);
+    helper.stressor.disconnect();
   };
 
   test('sendStringMessagesNoDelay', async () => {

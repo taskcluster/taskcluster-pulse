@@ -5,7 +5,7 @@ suite('API', () => {
   let load = require('../lib/main');
   let slugid = require('slugid');
   let _ = require('lodash');
-  
+
   let namespaces;
 
   setup(async () => {
@@ -32,7 +32,7 @@ suite('API', () => {
   test('exchanges', () => {
     return helper.pulse.exchanges();
   });
-  
+
   test('namespace', () => {
     return helper.pulse.namespace('samplenamespace', {
       contact: {
@@ -98,14 +98,14 @@ suite('API', () => {
     await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    await namespaces.scan({}, 
+    await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
           count++;
         },
       });
-    
+
     assert(count===0, 'expired namespace not removed');
   });
 
@@ -122,14 +122,14 @@ suite('API', () => {
     await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    await namespaces.scan({}, 
+    await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
           count++;
         },
       });
-    
+
     assert(count===0, 'expired namespace not removed');
   });
 
@@ -155,14 +155,14 @@ suite('API', () => {
     await namespaces.expire(taskcluster.fromNow('0 hours'));
 
     var count = 0;
-    await namespaces.scan({}, 
+    await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
           count++;
         },
       });
-    
+
     assert(count===0, 'expired namespaces not removed');
   });
 
@@ -189,7 +189,7 @@ suite('API', () => {
 
     let count = 0;
     let name = '';
-    await namespaces.scan({}, 
+    await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
         handler:          (ns) => {
@@ -197,13 +197,13 @@ suite('API', () => {
           count++;
         },
       });
-    
+
     assert(count===1, 'one namespace should still be active');
     assert(name==='e2', 'wrong namespace removed');
   });
 
-  test('"namespace" idempotency - return same namespace', async () => { 
-    let a = await helper.pulse.namespace('testname', { 
+  test('"namespace" idempotency - return same namespace', async () => {
+    let a = await helper.pulse.namespace('testname', {
       contact: {
         method: 'email',
         payload: {
@@ -223,9 +223,9 @@ suite('API', () => {
         },
       },
     });
-    assert(_.isEqual(a, b)); 
+    assert(_.isEqual(a, b));
   });
-  
+
   test('"namespace" idempotency - entry creation', async () => {
     for (let i = 0; i < 10; i++) {
       await helper.pulse.namespace('testname', {
@@ -236,13 +236,13 @@ suite('API', () => {
             subject: 'subject',
             content: 'content',
           },
-        },	
+        },
       });
-    } 
+    }
     let count = 0;
-    await namespaces.scan({}, 
+    await namespaces.scan({},
       {
-        limit:            250, 
+        limit:            250,
         handler:          ns => count++,
       });
     assert.equal(count, 1);

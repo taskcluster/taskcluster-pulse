@@ -177,10 +177,10 @@ suite('Rabbit Wrapper', () => {
     const messages = ['some', 'messages'];
     const delayBetweenMessages = 0;
     await helper.rabbit.createQueue(queuenames[0]);
+    await helper.stressor.connect();
     await helper.stressor.sendMessages(queuenames[0], messages, delayBetweenMessages);
 
     const dequeuedMessages = await helper.rabbit.messagesFromQueue(queuenames[0]);
-
     assert(dequeuedMessages instanceof Array);
     assert(_.has(dequeuedMessages[0], 'payload_bytes'));
     assert(_.has(dequeuedMessages[0], 'redelivered'));
@@ -188,5 +188,7 @@ suite('Rabbit Wrapper', () => {
     assert(_.has(dequeuedMessages[0], 'routing_key'));
     assert(_.has(dequeuedMessages[0], 'message_count'));
     assert(_.has(dequeuedMessages[0], 'properties'));
+
+    helper.stressor.disconnect();
   });
 });
