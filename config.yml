@@ -41,8 +41,12 @@ defaults:
     targetQueue:              !env STRESSOR_TARGET_QUEUE
 
   monitor:
-    amqpUrl:                  !env MONITOR_AMQP_URL
-    refreshInterval:          !env MONITOR_REFRESH_INTERVAL
+    amqpUrl:                      !env MONITOR_AMQP_URL
+    refreshInterval:              !env MONITOR_REFRESH_INTERVAL
+
+  alerter:
+    messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE
+    messagePublishRateTolerance:  !env ALERTER_MESSAGE_PUBLISH_RATE_TOLERANCE
 
 production:
   server:
@@ -51,12 +55,15 @@ production:
     env:                      'production'
 
 test:
-  server:
-    publicUrl:        http://localhost:60403
-    port:             60403
-    forceSSL:         false
-    trustProxy:       false
-    env:              development
+  taskcluster:
+    credentials:
+      clientId:       'test-client'
+      accessToken:    'none'
+
+  rabbit:
+    username: 'guest'
+    password: 'guest'
+    baseUrl:  'http://localhost:15672/api'
 
   stressor:
     payloadSize: 20
@@ -65,11 +72,20 @@ test:
     amqpUrl: 'amqp://localhost'
     targetQueue: 'stressor queue'
 
-  monitor:
-    amqpUrl: 'amqp://localhost'
-    refreshInterval: 1000
+  server:
+    publicUrl:        http://localhost:60403
+    port:             60403
+    forceSSL:         false
+    trustProxy:       false
+    env:              development
 
   azure:
     account:  "inMemory"
 
+  monitor:
+    amqpUrl: 'amqp://localhost'
+    refreshInterval: 1000
 
+  alerter:
+    messageCountTolerance: 10
+    messagePublishRateTolerance: 5

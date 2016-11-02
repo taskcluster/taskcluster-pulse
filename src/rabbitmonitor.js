@@ -3,6 +3,7 @@
  * @module rabbitmonitor
  */
 const assert = require('assert');
+const taskcluster = require('taskcluster-client');
 
 /**
  * An interface for monitoring all rabbitmq queues whose names
@@ -13,19 +14,22 @@ const assert = require('assert');
  */
 class RabbitMonitor {
   /**
-   * @param {string} amqpUrl               - The AMQP url to connect to. Eg. amqp://localhost.
-   * @param {number} refreshInterval       - Interval in milliseconds at which new
-   *                                         statistics are produced from
-   *                                         monitoring taskcluster queues.
-   * @param {RabbitManager} rabbitManager
+   * @param {string} config.monitor.amqpUrl         - The AMQP url to connect to. Eg. amqp://localhost.
+   * @param {number} config.monitor.refreshInterval - Interval in milliseconds at which new
+   *                                                  statistics are produced from
+   *                                                  monitoring taskcluster queues.
+   * @param {RabbitAlerter} rabbitAlerter           - Sends alerts based off various message queue statistics.
+   * @param {RabbitManager} rabbitManager           - RabbitMQ client.
    */
-  constructor({amqpUrl, refreshInterval}, rabbitManager) {
+  constructor({amqpUrl, refreshInterval}, rabbitAlerter, rabbitManager) {
     assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
+    assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
     this.amqpUrl = amqpUrl;
     this.refreshInterval = refreshInterval;
     this.rabbitManager = rabbitManager;
+    this.rabbitAlerter = rabbitAlerter;
   }
 
   /**
@@ -91,7 +95,7 @@ class RabbitMonitor {
    */
   async createStats(queueName) {
     const queue = await this.rabbitManager.queue(queueName);
-    return new Stats(queueName, queue.messages, queue.messages_details.rate);
+    return new RabbitMonitor.Stats(queueName, queue.messages, queue.messages_details.rate);
   }
 
   /**
@@ -118,7 +122,10 @@ class RabbitMonitor {
         }
         timesMonitored++;
       }
-      this.stats = await this.collectStats(queueNames);
+      // TODO: Collect the stats, get the namespace,
+      // check if alerter tolerances are exceeded, if so,
+      // send alert.
+      await this.collectStats(queueNames);
     }, this.refreshInterval);
   }
 }
@@ -133,13 +140,13 @@ class RabbitMonitor {
  * @property {number} rate      - The amount of messages which are published to
  *                                the queue per second.
  */
-class Stats {
+RabbitMonitor.Stats = class {
   constructor(queueName, messages, rate) {
     this.queueName = queueName;
     this.timestamp = Date.now();
     this.messages = messages;
     this.rate = rate;
   }
-}
+};
 
 module.exports = RabbitMonitor;

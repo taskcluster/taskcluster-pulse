@@ -1,5 +1,6 @@
 suite('Rabbit Monitor', () => {
   const assert = require('assert');
+  const sinon = require('sinon');
   const _ = require('lodash');
   const helper = require('./helper');
 
@@ -44,20 +45,20 @@ suite('Rabbit Monitor', () => {
     const queueNames = [queueOne, queueTwo];
     const refreshTimes = 3;
     helper.monitor.refreshInterval = 50;
+    helper.monitor.collectStats = sinon.spy();
     await helper.monitor.monitorQueues(queueNames, refreshTimes);
-
-    assert(helper.monitor.stats);
-    assert(helper.monitor.stats.length === 2);
+    assert(helper.monitor.collectStats.calledThrice);
   });
 
   test('runAndStop', async () => {
+    helper.monitor.collectStats = sinon.spy();
     helper.monitor.refreshInterval = 50;
     helper.monitor.run();
 
     const afterTimeout = async (resolvePromise) => {
       assert(helper.monitor.monitoringInterval);
       helper.monitor.stop();
-      assert(helper.monitor.stats);
+      assert(helper.monitor.collectStats.calledOnce);
       assert(helper.monitor.monitoringInterval === undefined);
       resolvePromise();
     };
