@@ -116,6 +116,8 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
       contact:  {},
     });
 
@@ -140,6 +142,8 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
       contact:  {},
     });
 
@@ -149,6 +153,8 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
       contact:  {},
     });
 
@@ -173,6 +179,8 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('- 1 day'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
       contact:  {},
     });
 
@@ -182,6 +190,8 @@ suite('API', () => {
       password: slugid.v4(),
       created:  new Date(),
       expires:  taskcluster.fromNow('1 day'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
       contact:  {},
     });
 
@@ -247,4 +257,120 @@ suite('API', () => {
       });
     assert.equal(count, 1);
   });
+
+  test('rotate namespace - no entries', async () => {
+    await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+
+    var count = 0;
+    await namespaces.scan({},
+      {
+        limit:            250, 
+        handler:          (ns) => {
+          count++;
+        },
+      });
+
+    assert(count===0, 'no entries should exist');
+  });
+
+  test('rotate namespace - one entry', async () => {
+    var old_pass = slugid.v4();
+    
+    await namespaces.create({
+      namespace: 'testname',
+      username: 'testname',
+      password: old_pass,
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 hour'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
+    });
+
+    await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+
+    var ns = await namespaces.load({namespace: 'testname'});
+    assert(ns, 'namespace should exist');
+    assert(ns.rotationState==='2', 'namespace should have rotated state');
+    assert(ns.password !== old_pass, 'rotated namespace should have new password');
+
+  });
+
+  test('rotate namespace - two entry', async () => {
+    var old_pass = slugid.v4();
+    
+    await namespaces.create({
+      namespace: 'testname1',
+      username: 'testname',
+      password: old_pass,
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 hour'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
+    });
+
+    await namespaces.create({
+      namespace: 'testname2',
+      username: 'testname',
+      password: old_pass,
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 hour'),
+      rotationState: '2',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
+    });
+
+    await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+
+    var ns1 = await namespaces.load({namespace: 'testname1'});
+    var ns2 = await namespaces.load({namespace: 'testname2'});
+
+    assert(ns1 && ns2, 'namespaces should exist');
+    assert(ns1.rotationState==='2', 'testname1 should have rotated state');
+    assert(ns1.password !== old_pass, 'rotated testname1 should have new password');
+
+    assert(ns2.rotationState==='1', 'testname2 should have rotated state');
+    assert(ns2.password !== old_pass, 'rotated testname2 should have new password');
+
+  });
+
+  test('rotate namespace - one of two entry', async () => {
+    var old_pass = slugid.v4();
+    
+    await namespaces.create({
+      namespace: 'testname1',
+      username: 'testname',
+      password: old_pass,
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 hour'),
+      rotationState: '1',
+      nextRotation:  taskcluster.fromNow('- 1 day'),
+      contact:  {},
+    });
+
+    await namespaces.create({
+      namespace: 'testname2',
+      username: 'testname',
+      password: old_pass,
+      created:  new Date(),
+      expires:  taskcluster.fromNow('1 hour'),
+      rotationState: '2',
+      nextRotation:  taskcluster.fromNow('1 day'),
+      contact:  {},
+    });
+
+    await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+
+    var ns1 = await namespaces.load({namespace: 'testname1'});
+    var ns2 = await namespaces.load({namespace: 'testname2'});
+
+    assert(ns1 && ns2, 'namespaces should exist');
+    assert(ns1.rotationState==='2', 'testname1 should have rotated state');
+    assert(ns1.password !== old_pass, 'rotated testname1 should have new password');
+
+    assert(ns2.rotationState ==='2', 'testname2 should have same rotation state');
+    assert(ns2.password === old_pass, 'testname2 should have same password');
+  });
+
 });

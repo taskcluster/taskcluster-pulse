@@ -87,6 +87,23 @@ let load = loader({
     },
   },
 
+  'rotate-namespaces':{
+    requires: ['cfg', 'Namespaces', 'monitor', 'rabbit'],
+    setup: async ({cfg, Namespaces, monitor, rabbit}) => {
+      let now = taskcluster.fromNow(cfg.app.namespacesRotationDelay);
+      assert(!_.isNaN(now), 'Can\'t have NaN as now');
+
+      // rotate namespace username entries using delay
+      debug('Rotating namespace entry at: %s, from before %s', new Date(), now);
+      let count = await Namespaces.rotate(now, rabbit);
+      debug('Rotating %s namespace entries', count);
+
+      monitor.count('rotate-namespaces.done');
+      monitor.stopResourceMonitoring();
+      await monitor.flush();
+    },
+  },
+
   api: {
     requires: ['cfg', 'monitor', 'validator', 'rabbit', 'Namespaces'],
     setup: ({cfg, monitor, validator, rabbit, Namespaces}) => v1.setup({

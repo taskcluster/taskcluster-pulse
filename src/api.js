@@ -93,7 +93,7 @@ api.declare({
 
   if (namespace.length>64 || !/^[A-Za-z0-9_-]+$/.test(namespace)) {
     return res.status(400).json({
-      message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
+      message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z0-9_-]',
       error: {
         namespace:  req.params.namespace,
       },
@@ -103,7 +103,7 @@ api.declare({
   let newNamespace = await setNamespace(this, namespace, contact);
   res.reply({
     namespace:  newNamespace.namespace,
-    username:   newNamespace.username,
+    username:   this.Namespaces.getRotationUsername(newNamespace),
     password:   newNamespace.password,
     contact:    newNamespace.contact,
   });
@@ -118,20 +118,24 @@ async function setNamespace(context, namespace, contact) {
   try {
     newNamespace = await context.Namespaces.create({
       namespace:  namespace,
-      username:   slugid.v4(),
+      username:   namespace,
       password:   slugid.v4(),
       created:    new Date(),
       expires:    taskcluster.fromNow('1 day'),
+      rotationState:  '1',
+      nextRotation: taskcluster.fromNow('1 hour'),
       contact:    contact,
     });
     
-    await context.rabbit.setUserPermissions(
-      user = await context.rabbit.createUser(newNamespace.username, newNamespace.password, ['taskcluster-pulse']),
-      vhost             = '/',
-      configurePattern  = '',
-      writePattern      = `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,
-      readPattern       = 'taskcluster/exchanges/.*',
-      ); 
+    await context.rabbit.createUser(namespace.concat('-').concat('1'), newNamespace.password, ['taskcluster-pulse']);
+    await context.rabbit.createUser(namespace.concat('-').concat('2'), newNamespace.password, ['taskcluster-pulse']);
+    
+    //set up user pairs in rabbitmq, both users are used for auth rotations
+    await context.rabbit.setUserPermissions(namespace.concat('-').concat('1'), '/', 'test',
+      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`, 'taskcluster/exchanges/.*'); 
+    await context.rabbit.setUserPermissions(namespace.concat('-').concat('2'), '/', 'test',
+      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`, 'taskcluster/exchanges/.*'); 
+    
   } catch (err) {
     if (err.code !== 'EntityAlreadyExists') {
       throw err;
