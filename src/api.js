@@ -131,10 +131,21 @@ async function setNamespace(context, namespace, contact) {
     await context.rabbit.createUser(namespace.concat('-').concat('2'), newNamespace.password, ['taskcluster-pulse']);
     
     //set up user pairs in rabbitmq, both users are used for auth rotations
-    await context.rabbit.setUserPermissions(namespace.concat('-').concat('1'), '/', 'test',
-      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`, 'taskcluster/exchanges/.*'); 
-    await context.rabbit.setUserPermissions(namespace.concat('-').concat('2'), '/', 'test',
-      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`, 'taskcluster/exchanges/.*'); 
+    await context.rabbit.setUserPermissions(
+      namespace.concat('-1'),                                         //username
+      '/',                                                            //vhost
+      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
+      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
+      'taskcluster/exchanges/.*'                                      //read pattern
+      ); 
+
+    await context.rabbit.setUserPermissions(
+      namespace.concat('-2'),                                         //username
+      '/',                                                            //vhost
+      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
+      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
+      'taskcluster/exchanges/.*'                                      //read pattern
+      );   
     
   } catch (err) {
     if (err.code !== 'EntityAlreadyExists') {
