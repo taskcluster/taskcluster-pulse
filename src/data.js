@@ -2,6 +2,7 @@ let assert = require('assert');
 let Entity = require('azure-entities');
 let taskcluster = require('taskcluster-client');
 let slugid = require('slugid');
+let RabbitManager = require('../lib/rabbitmanager');
 
 /**
  * Entity for keeping track of pulse user credentials
@@ -53,7 +54,7 @@ Namespace.expire = async function(now) {
 
 Namespace.rotate = async function(now, rabbit) {
   assert(now instanceof Date, 'now must be given as option');
-  //assert(rabbit instanceof RabbitManager, 'rabbit manager must be given as option');
+  assert(rabbit instanceof RabbitManager, 'rabbit manager must be given as option');
   
   var count = 0;
   await Entity.scan.call(this, {
@@ -66,6 +67,7 @@ Namespace.rotate = async function(now, rabbit) {
       var nextRotationState = ns.rotationState === '1' ? '2' : '1';
 
       //modify user in rabbitmq
+      //TODO: open issue to create editUser method for rabbitmq api
       await rabbit.createUser(ns.username.concat('-').concat(nextRotationState), nextPass, ['taskcluster-pulse']);
 
       //modify ns in table
