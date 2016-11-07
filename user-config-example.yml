@@ -4,14 +4,3 @@ defaults:
     username: 'guest'
     password: 'guest'
     baseUrl:  'http://localhost:15672/api'
-
-  stressor:
-    payloadSize: 20
-    uploadRate: 50
-    messageCount: 5
-    amqpUrl: 'amqp://localhost'
-    targetQueue: 'stressor queue'
-
-  monitor:
-    amqpUrl: 'amqp://localhost'
-    refreshInterval: 1000
