@@ -34,7 +34,7 @@ suite('Rabbit Wrapper', () => {
     }
     for (let queuename of queuenames) {
       try {
-        await helper.rabbit.deleteQuee(queuename);
+        await helper.rabbit.deleteQueue(queuename);
       } catch (e) {
         // Intentianlly do nothing since this queue might not have been created.
       }
