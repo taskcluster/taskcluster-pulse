@@ -58,6 +58,17 @@ test:
     trustProxy:       false
     env:              development
 
+  stressor:
+    payloadSize: 20
+    uploadRate: 50
+    messageCount: 5
+    amqpUrl: 'amqp://localhost'
+    targetQueue: 'stressor queue'
+
+  monitor:
+    amqpUrl: 'amqp://localhost'
+    refreshInterval: 1000
+
   azure:
     account:  "inMemory"
 
