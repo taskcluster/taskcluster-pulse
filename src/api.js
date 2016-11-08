@@ -32,7 +32,7 @@ api.declare({
   route:    '/overview',
   name:     'overview',
   title:    'Rabbit Overview',
-  output:	    'rabbit-overview.json',		
+  output:	  'rabbit-overview.json',		
   description: [
     'An overview of the Rabbit cluster',
     '',
@@ -55,6 +55,7 @@ api.declare({
   route:    '/exchanges',
   name:     'exchanges',
   title:    'Rabbit Exchanges',  
+  output:   'exchanges-response.json',
   description: [
     'A list of exchanges in the rabbit cluster',
     '',
@@ -78,6 +79,7 @@ api.declare({
   name:     'namespace',
   title:    'Create a namespace',	
   input:    'namespace-request.json',
+  output:   'namespace-response.json',
   scopes:   [
     ['pulse:namespace:<namespace>'],
   ],

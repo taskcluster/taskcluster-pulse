@@ -1,0 +1,11 @@
+$schema:  http://json-schema.org/draft-04/schema#
+title:              "RabbitMQ Exchanges"
+description: |
+  An array of strings containing the names of exchanges in RabbitMQ
+type: array
+items:
+    type: string
+additionalProperties: false
+required:
+  - exchanges
+
