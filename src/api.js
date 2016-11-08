@@ -134,17 +134,17 @@ async function setNamespace(context, namespace, contact) {
     await context.rabbit.setUserPermissions(
       namespace.concat('-1'),                                         //username
       '/',                                                            //vhost
-      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
-      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
-      'taskcluster/exchanges/.*'                                      //read pattern
+      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
+      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
+      '^taskcluster/exchanges/.*'                                      //read pattern
       ); 
 
     await context.rabbit.setUserPermissions(
       namespace.concat('-2'),                                         //username
       '/',                                                            //vhost
-      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
-      `taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
-      'taskcluster/exchanges/.*'                                      //read pattern
+      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
+      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
+      '^taskcluster/exchanges/.*'                                      //read pattern
       );   
     
   } catch (err) {
