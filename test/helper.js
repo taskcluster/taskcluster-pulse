@@ -44,10 +44,11 @@ mocha.before(async () => {
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
-  helper.stressor = new Stressor(cfg.stressor, new Rabbit(cfg.rabbit));
+  helper.stressor = new Stressor(cfg.stressor, cfg.taskcluster.amqpUrl, new Rabbit(cfg.rabbit));
   helper.alerter = new Alerter(cfg.alerter, cfg.taskcluster.credentials);
   helper.monitor = new Monitor(
     cfg.monitor,
+    cfg.taskcluster.amqpUrl,
     new Alerter(cfg.alerter, cfg.taskcluster.credentials),
     new Rabbit(cfg.rabbit)
   );

@@ -100,6 +100,21 @@ suite('Rabbit Alerter', () => {
 
     namespace.contact.method = 'pulse';
     helper.alerter.sendAlert(stats, namespace);
+    assert(!mockNotifier.pulse.called);
+
+    namespace.contact.method = 'email';
+    helper.alerter.sendAlert(stats, namespace);
+    assert(!mockNotifier.email.called);
+
+    namespace.contact.method = 'irc';
+    helper.alerter.sendAlert(stats, namespace);
+    assert(!mockNotifier.irc.called);
+
+    // This should exceed at leat one of the tolerances,
+    // giving the alerter a better purpose to deliver alerts.
+    stats.messages = 100;
+    namespace.contact.method = 'pulse';
+    helper.alerter.sendAlert(stats, namespace);
     assert(mockNotifier.pulse.calledOnce);
 
     namespace.contact.method = 'email';

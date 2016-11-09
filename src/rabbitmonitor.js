@@ -14,16 +14,16 @@ const taskcluster = require('taskcluster-client');
  */
 class RabbitMonitor {
   /**
-   * @param {string} config.monitor.amqpUrl         - The AMQP url to connect to. Eg. amqp://localhost.
    * @param {number} config.monitor.refreshInterval - Interval in milliseconds at which new
    *                                                  statistics are produced from
    *                                                  monitoring taskcluster queues.
+   * @param {string} config.taskcluster.amqpUrl     - The AMQP url to connect to. Eg. amqp://localhost.
    * @param {RabbitAlerter} rabbitAlerter           - Sends alerts based off various message queue statistics.
    * @param {RabbitManager} rabbitManager           - RabbitMQ client.
    */
-  constructor({amqpUrl, refreshInterval}, rabbitAlerter, rabbitManager) {
-    assert(amqpUrl, 'Must provide an AMQP URL!');
+  constructor({refreshInterval}, amqpUrl, rabbitAlerter, rabbitManager) {
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
+    assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
     this.amqpUrl = amqpUrl;
@@ -84,18 +84,8 @@ class RabbitMonitor {
    *                                      once all promises have been resolved.
    */
   async collectStats(queueNames) {
-    return await Promise.all(queueNames.map(async queueName => this.createStats(queueName)));
-  }
-
-  /**
-   * @private
-   * @param {string} queueName - The name of the queue from which we collect
-   *                             stats from.
-   * @returns {Stats}
-   */
-  async createStats(queueName) {
-    const queue = await this.rabbitManager.queue(queueName);
-    return new RabbitMonitor.Stats(queueName, queue.messages, queue.messages_details.rate);
+    const queues = await Promise.all(queueNames.map(async queueName => await this.rabbitManager.queue(queueName)));
+    return queues.map(queue => new RabbitMonitor.Stats(queue.name, queue.messages, queue.messages_details.rate));
   }
 
   /**
@@ -122,11 +112,17 @@ class RabbitMonitor {
         }
         timesMonitored++;
       }
-      // TODO: Collect the stats, get the namespace,
-      // check if alerter tolerances are exceeded, if so,
-      // send alert.
-      await this.collectStats(queueNames);
+
+      const stats = await this.collectStats(queueNames);
+      this.sendAlerts(stats);
     }, this.refreshInterval);
+  }
+
+  /**
+   * @param {Array.<RabbitMonitor.Stats>} stats
+   */
+  sendAlerts(stats) {
+    stats.forEach(currentStats => this.rabbitAlerter.sendAlert(currentStats));
   }
 }
 

@@ -24,6 +24,7 @@ class RabbitAlerter {
     assert(credentials.clientId, 'TaskCluster credentials requires a clientId!');
     assert(credentials.accessToken, 'TaskCluster credentials requires an accessToken!');
     this.notifier = new taskcluster.Notify({credentials});
+    this.pulse = new taskcluster.Pulse();
     this.messageCountTolerance = messageCountTolerance;
     this.messagePublishRateTolerance = messagePublishRateTolerance;
   }
@@ -55,7 +56,7 @@ class RabbitAlerter {
   /**
    * @param {RabbitMonitor.Stats} stats
    * @param {Object} namespace            - Determines which kind of alert to create.
-   * @returns {RabbitAlerter.Alert}                     - An alert variant.
+   * @returns {RabbitAlerter.Alert}       - An alert variant.
    */
   createAlert(stats, namespace) {
     const contactMethod = namespace.contact.method;
@@ -78,10 +79,12 @@ class RabbitAlerter {
    * Sends an alert given the provided stats
    *
    * @param {RabbitMonitor.Stats} stats
-   * @param {Object} namespace          - The namespace holding information relevant to
-   *                                      the notification method.
    */
+  // TODO: The namespace response should be fetched from the pulse api
   sendAlert(stats, namespace) {
+    if (!this.anyTolearanceExceeded(stats)) {
+      return;
+    }
     const alert = this.createAlert(stats, namespace);
     if (alert !== undefined) {
       if (this.messagesExceeded(stats)) {
@@ -117,14 +120,14 @@ RabbitAlerter.Alert = class {
 
   messagesExceeded() {
     if (this.payload.message) {
-      this.payload.message += `- Message Count: ${stats.messages} `;
+      this.payload.message += `- Message Count: ${this.stats.messages} `;
       this.payload.message += `exceeds the tolerance of ${this.messageCountTolerance}\n`;
     }
   }
 
   messagePublishRateExceeded() {
     if (this.payload.message) {
-      this.payload.message += `- Message Publish Rate: ${stats.rate} `;
+      this.payload.message += `- Message Publish Rate: ${this.stats.rate} `;
       this.payload.message += `exceeds the tolerance of ${this.messagePublishRateTolerance}\n`;
     }
   }
@@ -140,8 +143,7 @@ RabbitAlerter.PulseAlert = class extends RabbitAlerter.Alert {
     super(stats, notifier);
     this.payload.routingKey = routingKey;
     this.payload.message = 'Alert from TaskCluster-Pulse:\n';
-    this.payload.message += `The queue ${stats.queueName} has exceeded the following thresholds:\n`;
-    this.stats = stats;
+    this.payload.message += `The queue ${this.stats.queueName} has exceeded the following thresholds:\n`;
   }
 
   /** @override */
@@ -160,20 +162,20 @@ RabbitAlerter.EmailAlert  = class extends RabbitAlerter.Alert {
     super(stats, notifier);
     this.payload = {};
     this.payload.address = address;
-    this.payload.subject = 'TaskCluster-Pulse alert: ${stats.queueName}';
+    this.payload.subject = 'TaskCluster-Pulse alert: ${this.stats.queueName}';
     this.payload.content = 'Alert from TaskCluster-Pulse:\n';
-    this.payload.content += `The queue *${stats.queueName}* has exceeded the following thresholds:\n`;
+    this.payload.content += `The queue *${this.stats.queueName}* has exceeded the following thresholds:\n`;
   }
 
  /** @override */
-  messagesExceeded(stats) {
-    this.payload.content += `* Message Count: *${stats.messages}* exceeds `;
+  messagesExceeded() {
+    this.payload.content += `* Message Count: *${this.stats.messages}* exceeds `;
     this.payload.content += `the tolerance of *${this.messageCountTolerance}*\n`;
   }
 
   /** @override */
-  messagePublishRateExceeded(stats) {
-    this.payload.content += `* Message Publish Rate: ${stats.rate} exceeds `;
+  messagePublishRateExceeded() {
+    this.payload.content += `* Message Publish Rate: ${this.stats.rate} exceeds `;
     this.payload.content += `the tolerance of ${this.messagePublishRateTolerance}\n`;
   }
 
@@ -193,7 +195,7 @@ RabbitAlerter.IRCAlert = class extends RabbitAlerter.Alert {
     super(stats, notifier);
     this.payload.channel = channel;
     this.payload.message = 'Alert from TaskCluster-Pulse:\n';
-    this.payload.message += `The queue ${stats.queueName} has exceeded the following thresholds:\n`;
+    this.payload.message += `The queue ${this.stats.queueName} has exceeded the following thresholds:\n`;
   }
 
   /** @override */

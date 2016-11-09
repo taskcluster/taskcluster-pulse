@@ -16,16 +16,16 @@ class RabbitStressor {
    * @param {number} uploadRate            - Interval in milliseconds at which messages uploaded
    *                                         to the target queue.
    * @param {number} messageCount          - The number of messages to send.
-   * @param {string} amqpUrl               - The AMQP url to connect to. Eg. amqp://localhost.
    * @param {string} targetQueue           - The name of the queue where messages are uploaded to.
+   * @param {string} amqpUrl               - The AMQP url to connect to. Eg. amqp://localhost.
    * @param {RabbitManager} rabbitManager
    */
-  constructor({payloadSize, uploadRate, messageCount, amqpUrl, targetQueue}, rabbitManager) {
+  constructor({payloadSize, uploadRate, messageCount, targetQueue}, amqpUrl, rabbitManager) {
     assert(payloadSize, 'Must provide a payload size!');
     assert(uploadRate, 'Must provide a upload rate!');
     assert(messageCount, 'Must provide a number of messages to send!');
-    assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(targetQueue, 'Must provide a target queue name!');
+    assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(rabbitManager, 'Must provide a valid Rabbit Manager!');
     this.payloadSize = payloadSize;
     this.uploadRate = uploadRate;

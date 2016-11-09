@@ -17,6 +17,7 @@ defaults:
     credentials:      # Load strings from environment variables
       clientId:       !env TASKCLUSTER_CLIENT_ID
       accessToken:    !env TASKCLUSTER_ACCESS_TOKEN
+    amqpUrl:          !env TASKCLUSTER_AMQP_URL
 
   server:
     publicUrl:                https://pulse.taskcluster.net
@@ -37,11 +38,9 @@ defaults:
     payloadSize:              !env STRESSOR_PAYLOAD_SIZE
     uploadRate:               !env STRESSOR_UPLOAD_RATE
     messageCount:             !env STRESSOR_MESSAGE_COUNT
-    amqpUrl:                  !env STRESSOR_AMQP_URL
     targetQueue:              !env STRESSOR_TARGET_QUEUE
 
   monitor:
-    amqpUrl:                      !env MONITOR_AMQP_URL
     refreshInterval:              !env MONITOR_REFRESH_INTERVAL
 
   alerter:
@@ -59,6 +58,7 @@ test:
     credentials:
       clientId:       'test-client'
       accessToken:    'none'
+    amqpUrl:          'amqp://localhost'
 
   rabbit:
     username: 'guest'
@@ -69,7 +69,6 @@ test:
     payloadSize: 20
     uploadRate: 50
     messageCount: 5
-    amqpUrl: 'amqp://localhost'
     targetQueue: 'stressor queue'
 
   server:
@@ -83,7 +82,6 @@ test:
     account:  "inMemory"
 
   monitor:
-    amqpUrl: 'amqp://localhost'
     refreshInterval: 1000
 
   alerter:
