@@ -55,6 +55,16 @@ class RabbitManager {
     return rp(options);
   }
 
+  /** @private */
+  encode(raw) {
+    // NOTE: must use `encodeURIComponent` as we are encoding query parameters.
+    if (raw instanceof Array) {
+      return _.map(raw, (value) => encodeURIComponent(value));
+    }
+    assert(typeof raw == 'string');
+    return encodeURIComponent(raw);
+  }
+
   /** Get information that describe the whole system. */
   async overview() {
     return await this.request('overview');
@@ -162,8 +172,9 @@ class RabbitManager {
   async userPermissions(user, vhost) {
     assert(user);
 
+    user = this.encode(user);
     if (vhost) {
-      vhost = encodeURIComponent(vhost);
+      vhost = this.encode(vhost);
       return await this.request(`permissions/${vhost}/${user}`);
     } else {
       return await this.request(`users/${user}/permissions`);
@@ -193,7 +204,7 @@ class RabbitManager {
       write: writePattern,
       read: readPattern,
     };
-    vhost = encodeURIComponent(vhost);
+    [user, vhost] = this.encode([user, vhost]);
     await this.request(`permissions/${vhost}/${user}`, {
       body: JSON.stringify(permissions),
       method: 'PUT',
@@ -211,20 +222,13 @@ class RabbitManager {
     assert(user);
     assert(vhost);
 
-    vhost = encodeURIComponent(vhost);
+    [user, vhost] = this.encode([user, vhost]);
     await this.request(`permissions/${vhost}/${user}`, {method: 'delete'});
   }
 
   /** Get a list of all queues. */
   async queues() {
     return await this.request('queues');
-  }
-
-  /** @private */
-  encodeURIComponents(components) {
-    const result = {};
-    Object.keys(components).forEach(key => result[key] = encodeURIComponent(components[key]));
-    return result;
   }
 
   /**
@@ -238,8 +242,8 @@ class RabbitManager {
     assert(name);
     assert(vhost);
 
-    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
-    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`);
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`queues/${vhost}/${name}`);
   }
 
   /**
@@ -259,8 +263,8 @@ class RabbitManager {
     assert(options instanceof Object);
     assert(vhost);
 
-    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
-    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`queues/${vhost}/${name}`, {
       body: JSON.stringify(options),
       method: 'put',
     });
@@ -277,8 +281,8 @@ class RabbitManager {
     assert(name);
     assert(vhost);
 
-    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
-    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}`, {method: 'delete'});
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`queues/${vhost}/${name}`, {method: 'delete'});
   }
 
   /**
@@ -304,8 +308,8 @@ class RabbitManager {
     assert(options.encoding);
     assert(vhost);
 
-    const uriEncodedComponents = this.encodeURIComponents({name: name, vhost: vhost});
-    return await this.request(`queues/${uriEncodedComponents.vhost}/${uriEncodedComponents.name}/get`, {
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`queues/${vhost}/${name}/get`, {
       body: JSON.stringify(options),
       method: 'post',
     });
