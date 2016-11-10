@@ -41,6 +41,13 @@ suite('Rabbit Wrapper', () => {
     }
   });
 
+  // Although this is in fact supposed to be private, we are testing it anyway
+  // because of its importance.
+  test('encode', async () => {
+    assert.equal(helper.rabbit.encode('/a b'), '%2Fa%20b');
+    assert(_.isEqual(helper.rabbit.encode(['/a b', 'a+b']), ['%2Fa%20b', 'a%2Bb']));
+  });
+
   test('overview', async () => {
     const overview = await helper.rabbit.overview();
     assert(_.has(overview, 'rabbitmq_version'));
