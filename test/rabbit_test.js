@@ -65,6 +65,16 @@ suite('Rabbit Wrapper', () => {
     await helper.rabbit.deleteUser(usernames[0]);
   });
 
+  test('createUserException', async () => {
+    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    try {
+      await helper.rabbit.createUser(usernames[0], 'dummy', []);
+      assert(false, 'Should have thrown 400 user already exists.');
+    } catch (error) {
+      assert(error);
+    }
+  });
+
   test('deleteUserException', async () => {
     try {
       await helper.rabbit.deleteUser(usernames[0]);
@@ -81,6 +91,32 @@ suite('Rabbit Wrapper', () => {
     assert(usersList.length > 0);
     assert(_.has(usersList[0], 'name'));
     assert(_.has(usersList[0], 'tags'));
+  });
+
+  test('user', async () => {
+    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    const user = await helper.rabbit.user(usernames[0]);
+    assert.equal(user.name, usernames[0]);
+  });
+
+  test('editUser', async () => {
+    const oldUser = await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    const newPassword = 'Bar';
+    const newTags = ['monitoring', 'management'];
+    const updatedUser = await helper.rabbit.editUser(usernames[0], newPassword, newTags);
+    assert.equal(updatedUser.name, usernames[0]);
+    assert.notEqual(updatedUser.password_hash, oldUser.password_hash);
+    assert(updatedUser.tags.includes('monitoring'));
+    assert(updatedUser.tags.includes('management'));
+  });
+
+  test('editUserThrowsStatusCodeError', async () => {
+    try {
+      await helper.rabbit.editUser(usernames[0], 'dummy', []);
+      assert(false, 'Should have thrown a StatusCodeError');
+    } catch (error) {
+      assert.equal(error.statusCode, 404);
+    }
   });
 
   test('exchanges', async () => {

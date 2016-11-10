@@ -78,26 +78,60 @@ class RabbitManager {
   /**
    * Create a user. All parameters are mandatory.
    *
+   * @throws {Error}                    - Thrown when user already exists.
+   *
    * @param {string} name               - Username.
    * @param {string} password           - The plaintext password.
    * @param {Array.<string>} tags       - A list of tags for the user. "administrator",
    *     "monitoring" and "management" have special meanings recognized by RabbitMQ.
    *     Other custom tags are also allowed. Tags cannot contain comma (',').
+   *
+   * @returns {Object}                  - The updated user.
    */
   async createUser(name, password, tags) {
     assert(name);
     assert(password);
     assert(tags instanceof Array);
+    try {
+      const user = await this.user(name);
+      throw new Error('User already exists!');
+    } catch (e) {
+      let payload = {
+        password: password,
+        tags: tags.join(),
+      };
 
-    let payload = {
-      password: password,
-      tags: tags.join(),
-    };
+      let response = await this.request(`users/${name}`, {
+        body: JSON.stringify(payload),
+        method: 'put',
+      });
 
-    let response = await this.request(`users/${name}`, {
-      body: JSON.stringify(payload),
-      method: 'put',
-    });
+      return await this.user(name);
+    }
+  }
+
+  /**
+   * Edit a user. All parameters are mandatory.
+   *
+   * @throws {StatusCodeError}     - User must exist.
+   *
+   * @param {string} username      - Username to edit.
+   * @param {string} password      - The plaintext password.
+   * @param {Array.<string>} tags  - A list of tags for the user.
+   *     "administrator", "monitoring" and "management" have special
+   *     meanings recognized by RabbitMQ. Other custom tags are also allowed.
+   *     Tags cannot contain comma (',').
+   *
+   * @returns {Object}             - The updated user.
+   */
+  async editUser(username, password, tags) {
+    assert(username);
+    assert(password);
+    assert(tags instanceof Array);
+
+    await this.user(username);
+    await this.createUser(username, password, tags);
+    return await this.user(username);
   }
 
   /**
@@ -113,9 +147,23 @@ class RabbitManager {
     });
   }
 
-  /** Get a list of all users. */
+ /**
+  * Get a list of all users.
+  *
+  * @returns {Promise.<Array.<Object>>} An array of users.
+  */
   async users() {
     return await this.request('users');
+  }
+
+  /**
+   * Get a user.
+   *
+   * @param {string} username
+   * @returns {Promise.<Object>} User info.
+   */
+  async user(username) {
+    return await this.request(`users/${username}`);
   }
 
   /**
