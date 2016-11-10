@@ -39,7 +39,7 @@ Namespace.getRotationUsername = function(ns) {
 
 Namespace.expire = async function(now) {
   assert(now instanceof Date, 'now must be given as option');
-  var count = 0;
+  let count = 0;
   await Entity.scan.call(this, {
     expires:          Entity.op.lessThan(now),
   }, {
@@ -56,15 +56,15 @@ Namespace.rotate = async function(now, rabbit) {
   assert(now instanceof Date, 'now must be given as option');
   assert(rabbit instanceof RabbitManager, 'rabbit manager must be given as option');
   
-  var count = 0;
+  let count = 0;
   await Entity.scan.call(this, {
     nextRotation:          Entity.op.lessThan(now),
   }, {
     limit:            250, // max number of concurrent modify operations
     handler:          async (ns) => {
       count++;
-      var nextPass = slugid.v4();
-      var nextRotationState = ns.rotationState === '1' ? '2' : '1';
+      let nextPass = slugid.v4();
+      let nextRotationState = ns.rotationState === '1' ? '2' : '1';
 
       //modify user in rabbitmq
       //TODO: open issue to create editUser method for rabbitmq api
