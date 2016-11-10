@@ -61,18 +61,8 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('createAndDeleteUser', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.createOrUpdateUser(usernames[0], 'dummy', []);
     await helper.rabbit.deleteUser(usernames[0]);
-  });
-
-  test('createUserException', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', []);
-    try {
-      await helper.rabbit.createUser(usernames[0], 'dummy', []);
-      assert(false, 'Should have thrown 400 user already exists.');
-    } catch (error) {
-      assert(error);
-    }
   });
 
   test('deleteUserException', async () => {
@@ -94,29 +84,9 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('user', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.createOrUpdateUser(usernames[0], 'dummy', []);
     const user = await helper.rabbit.user(usernames[0]);
     assert.equal(user.name, usernames[0]);
-  });
-
-  test('editUser', async () => {
-    const oldUser = await helper.rabbit.createUser(usernames[0], 'dummy', []);
-    const newPassword = 'Bar';
-    const newTags = ['monitoring', 'management'];
-    const updatedUser = await helper.rabbit.editUser(usernames[0], newPassword, newTags);
-    assert.equal(updatedUser.name, usernames[0]);
-    assert.notEqual(updatedUser.password_hash, oldUser.password_hash);
-    assert(updatedUser.tags.includes('monitoring'));
-    assert(updatedUser.tags.includes('management'));
-  });
-
-  test('editUserThrowsStatusCodeError', async () => {
-    try {
-      await helper.rabbit.editUser(usernames[0], 'dummy', []);
-      assert(false, 'Should have thrown a StatusCodeError');
-    } catch (error) {
-      assert.equal(error.statusCode, 404);
-    }
   });
 
   test('exchanges', async () => {
@@ -126,10 +96,10 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('usersWithAllTags', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', ['foo', 'bar']);
-    await helper.rabbit.createUser(usernames[1], 'dummy', ['foo']);
-    await helper.rabbit.createUser(usernames[2], 'dummy', ['bar']);
-    await helper.rabbit.createUser(usernames[3], 'dummy', ['bar', 'foo']);
+    await helper.rabbit.createOrUpdateUser(usernames[0], 'dummy', ['foo', 'bar']);
+    await helper.rabbit.createOrUpdateUser(usernames[1], 'dummy', ['foo']);
+    await helper.rabbit.createOrUpdateUser(usernames[2], 'dummy', ['bar']);
+    await helper.rabbit.createOrUpdateUser(usernames[3], 'dummy', ['bar', 'foo']);
 
     const tags = ['foo', 'bar'];
     const usersWithAllTags = await helper.rabbit.usersWithAllTags(tags);
@@ -140,11 +110,11 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('usersWithAnyTags', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', ['moo', 'tar']);
-    await helper.rabbit.createUser(usernames[1], 'dummy', ['moo']);
-    await helper.rabbit.createUser(usernames[2], 'dummy', ['tar']);
-    await helper.rabbit.createUser(usernames[3], 'dummy', ['tar', 'moo']);
-    await helper.rabbit.createUser(usernames[4], 'dummy', ['car', 'moo']);
+    await helper.rabbit.createOrUpdateUser(usernames[0], 'dummy', ['moo', 'tar']);
+    await helper.rabbit.createOrUpdateUser(usernames[1], 'dummy', ['moo']);
+    await helper.rabbit.createOrUpdateUser(usernames[2], 'dummy', ['tar']);
+    await helper.rabbit.createOrUpdateUser(usernames[3], 'dummy', ['tar', 'moo']);
+    await helper.rabbit.createOrUpdateUser(usernames[4], 'dummy', ['car', 'moo']);
 
     const tags = ['tar', 'car'];
     const usersWithAnyTags = await helper.rabbit.usersWithAnyTags(tags);
@@ -157,7 +127,7 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('userPermissions_singleVhost', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.createOrUpdateUser(usernames[0], 'dummy', []);
     await helper.rabbit.setUserPermissions(usernames[0], '/', '.*', '.*', '.*');
 
     let permissions = await helper.rabbit.userPermissions(usernames[0], '/');
@@ -174,7 +144,7 @@ suite('Rabbit Wrapper', () => {
   });
 
   test('userPermissions_allVhosts', async () => {
-    await helper.rabbit.createUser(usernames[0], 'dummy', []);
+    await helper.rabbit.createOrUpdateUser(usernames[0], 'dummy', []);
     await helper.rabbit.setUserPermissions(usernames[0], '/', '.*', '.*', '.*');
 
     let permissions = await helper.rabbit.userPermissions(usernames[0]);
