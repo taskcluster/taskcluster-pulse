@@ -5,6 +5,7 @@ defaults:
     exchangePrefix: v1/
     namespaceTableName: 'PulseNamespaces'
     namespacesExpirationDelay: '- 1 hour'
+    namespacesRotationDelay: '- 1 hour'
 
   aws:
     accessKeyId:      !env AWS_ACCESS_KEY_ID

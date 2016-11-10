@@ -1,0 +1,32 @@
+$schema:  http://json-schema.org/draft-04/schema#
+title:              "Namespace Creation Response"
+description: |
+  Namespace creation response
+type: object
+properties:
+  namespace:
+    type:           string
+    title:          Namespace
+    description:    The name of the namespace created
+  username:
+    type:           string
+    title:          Username
+    description:    The username created for authentication
+  password:
+    type:           string
+    title:          Password
+    description:    The password created for authentication
+  contact:
+    type:           object
+    title:          Contact Information
+    description:    The contact information which will be handed off to the notification service  
+    oneOf:
+                    - {$ref: 'http://schemas.taskcluster.net/pulse/v1/irc-request.json#'}
+                    - {$ref: 'http://schemas.taskcluster.net/pulse/v1/email-request.json#'}
+additionalProperties: false
+required:
+  - namespace
+  - username
+  - password
+  - contact
+
