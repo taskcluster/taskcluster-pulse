@@ -97,7 +97,7 @@ suite('API', () => {
   test('expire namespace - no entries', async () => {
     await namespaces.expire(taskcluster.fromNow('0 hours'));
 
-    var count = 0;
+    let count = 0;
     await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
@@ -123,7 +123,7 @@ suite('API', () => {
 
     await namespaces.expire(taskcluster.fromNow('0 hours'));
 
-    var count = 0;
+    let count = 0;
     await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
@@ -160,7 +160,7 @@ suite('API', () => {
 
     await namespaces.expire(taskcluster.fromNow('0 hours'));
 
-    var count = 0;
+    let count = 0;
     await namespaces.scan({},
       {
         limit:            250, // max number of concurrent delete operations
@@ -261,7 +261,7 @@ suite('API', () => {
   test('rotate namespace - no entries', async () => {
     await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
 
-    var count = 0;
+    let count = 0;
     await namespaces.scan({},
       {
         limit:            250, 
