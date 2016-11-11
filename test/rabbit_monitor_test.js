@@ -53,7 +53,6 @@ suite('Rabbit Monitor', () => {
   });
 
   test.skip('runAndStop', async () => {
-    helper.monitor.collectStats = sinon.spy();
     helper.monitor.refreshInterval = 50;
     helper.monitor.run();
 

@@ -55,12 +55,12 @@ class RabbitAlerter {
 
   /**
    * @param {RabbitMonitor.Stats} stats
-   * @param {Object} namespace            - Determines which kind of alert to create.
-   * @returns {RabbitAlerter.Alert}       - An alert variant.
+   * @param {Object} namespaceResponse            - Determines which kind of alert to create.
+   * @returns {RabbitAlerter.Alert}               - An alert variant.
    */
-  createAlert(stats, namespace) {
-    const contactMethod = namespace.contact.method;
-    const payload = namespace.contact.payload;
+  createAlert(stats, namespaceResponse) {
+    const contactMethod = namespaceResponse.contact.method;
+    const payload = namespaceResponse.contact.payload;
     switch (contactMethod) {
       case 'pulse':
         return new RabbitAlerter.PulseAlert(stats, this.notifier, payload.routingKey);
@@ -69,7 +69,7 @@ class RabbitAlerter {
       case 'irc':
         return new RabbitAlerter.IRCAlert(stats, this.notifier, payload.channel);
       default:
-        let warning = 'Cannot identify contact method in namespace.\n';
+        let warning = 'Cannot identify contact method in the namespace response.\n';
         warning += 'Currently supported methods are: "pulse", "email", and "irc"';
         console.warn(warning);
     }
@@ -79,13 +79,14 @@ class RabbitAlerter {
    * Sends an alert given the provided stats
    *
    * @param {RabbitMonitor.Stats} stats
+   * @param {Object} namespaceResponse   - This is where contact information is extracted from
    */
-  // TODO: The namespace response should be fetched from the pulse api
-  sendAlert(stats, namespace) {
+  async sendAlert(stats, namespaceResponse) {
     if (!this.anyTolearanceExceeded(stats)) {
       return;
     }
-    const alert = this.createAlert(stats, namespace);
+
+    const alert = this.createAlert(stats, namespaceResponse);
     if (alert !== undefined) {
       if (this.messagesExceeded(stats)) {
         alert.messagesExceeded();

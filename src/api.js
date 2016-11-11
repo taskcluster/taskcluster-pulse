@@ -32,7 +32,7 @@ api.declare({
   route:    '/overview',
   name:     'overview',
   title:    'Rabbit Overview',
-  output:   'rabbit-overview.json',		
+  output:   'rabbit-overview.json',
   description: [
     'An overview of the Rabbit cluster',
     '',
@@ -54,7 +54,7 @@ api.declare({
   method:   'get',
   route:    '/exchanges',
   name:     'exchanges',
-  title:    'Rabbit Exchanges',  
+  title:    'Rabbit Exchanges',
   output:   'exchanges-response.json',
   description: [
     'A list of exchanges in the rabbit cluster',
@@ -62,8 +62,8 @@ api.declare({
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
-  res.reply( 
-    _.map( 
+  res.reply(
+    _.map(
       await this.rabbit.exchanges(),
       elem => _.pick(elem, ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments'])
     )
@@ -76,8 +76,8 @@ api.declare({
 api.declare({
   method:   'post',
   route:    '/namespace/:namespace',
-  name:     'namespace',
-  title:    'Create a namespace',	
+  name:     'createNamespace',
+  title:    'Create a namespace',
   input:    'namespace-request.json',
   output:   'namespace-response.json',
   scopes:   [
@@ -93,15 +93,10 @@ api.declare({
   let {namespace} = req.params;
   let contact = req.body.contact; //the contact information
 
-  if (namespace.length>64 || !/^[A-Za-z0-9_-]+$/.test(namespace)) {
-    return res.status(400).json({
-      message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z0-9_-]',
-      error: {
-        namespace:  req.params.namespace,
-      },
-    });
+  if (!isNamespaceValid(namespace)) {
+    return invalidNamespaceResponse(req, res);
   }
- 
+
   let newNamespace = await setNamespace(this, namespace, contact);
   res.reply({
     namespace:  newNamespace.namespace,
@@ -111,12 +106,68 @@ api.declare({
   });
 });
 
-/* 
+/**
+ * Gets namespace details
+ */
+api.declare({
+  method:   'get',
+  route:    '/namespace/:namespace',
+  name:     'namespace',
+  title:    'Get namespace information',
+  scopes:   [
+    ['pulse:namespace:<namespace>'],
+  ],
+  //todo later: deferAuth: true,
+  description: [
+    'Gets a namespace, given the taskcluster credentials with scopes.',
+    '',
+    '**Warning** this api end-point is **not stable**.',
+  ].join('\n'),
+}, async function(req, res) {
+  const {namespace} = req.params;
+
+  if (!isNamespaceValid(namespace)) {
+    return invalidNamespaceResponse(req, res);
+  }
+
+  try {
+    const namespaceResponse = await this.Namespaces.load({namespace: namespace});
+    res.reply(namespaceResponse);
+  } catch (error) {
+    return res.status(404).json({
+      message: `Could not find namespace ${namespace}`,
+    });
+  }
+});
+
+/**
+ * @param {Object} request      - An HTTP request object.
+ * @param {Object} response     - An HTTP response object.
+ * @returns {Object} A 400 error indicating that the namespace was invalid.
+ */
+function invalidNamespaceResponse(request, response) {
+  return response.status(400).json({
+    message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
+    error: {
+      namespace:  request.params.namespace,
+    },
+  });
+}
+
+/**
+ * @param {string} namespace
+ * @returns {Boolean} True if namespace is valid.
+ */
+function isNamespaceValid(namespace) {
+  return namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace);
+}
+
+/*
  * Attempt to create a new namespace entry and associated Rabbit user.
  * If the requested namespace exists, return it.
  */
 async function setNamespace(context, namespace, contact) {
-  let newNamespace; 
+  let newNamespace;
   try {
     newNamespace = await context.Namespaces.create({
       namespace:  namespace,
@@ -128,10 +179,10 @@ async function setNamespace(context, namespace, contact) {
       nextRotation: taskcluster.fromNow('1 hour'),
       contact:    contact,
     });
-    
+
     await context.rabbit.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
     await context.rabbit.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
-    
+
     //set up user pairs in rabbitmq, both users are used for auth rotations
     await context.rabbit.setUserPermissions(
       namespace.concat('-1'),                                         //username
@@ -139,7 +190,7 @@ async function setNamespace(context, namespace, contact) {
       `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
       `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
       '^taskcluster/exchanges/.*'                                      //read pattern
-      ); 
+      );
 
     await context.rabbit.setUserPermissions(
       namespace.concat('-2'),                                         //username
@@ -147,13 +198,13 @@ async function setNamespace(context, namespace, contact) {
       `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
       `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
       '^taskcluster/exchanges/.*'                                      //read pattern
-      );   
-    
+      );
+
   } catch (err) {
     if (err.code !== 'EntityAlreadyExists') {
       throw err;
     }
     newNamespace = await context.Namespaces.load({namespace: namespace});
-  } 
+  }
   return newNamespace;
 }

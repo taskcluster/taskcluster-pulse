@@ -60,8 +60,44 @@ suite('API', () => {
     });
   });
 
-  test('namespace - char limit under', () => {
-    return helper.pulse.namespace('samplenamespace', {
+  test('namespace', async () => {
+    const namespace = 'foobar';
+    const namespaceInfo = {
+      contact: {
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
+      },
+    };
+    await helper.pulse.createNamespace(namespace, namespaceInfo);
+    await helper.pulse.namespace(namespace);
+  });
+
+  test('namespaceNotFound', async () => {
+    const namespace = 'foobar';
+    try {
+      await helper.pulse.namespace(namespace);
+      assert(false, 'Should have thrown a 404 error.');
+    } catch (error) {
+      assert(error.statusCode === 404);
+    }
+  });
+
+  test('invalidNamespace', async () => {
+    const namespace = 'sample%namespace';
+    try {
+      await helper.pulse.namespace(namespace);
+      assert(false, 'Should have thrown a 400 error.');
+    } catch (error) {
+      assert(error.statusCode === 400);
+    }
+  });
+
+  test('createNamespace - char limit under', () => {
+    return helper.pulse.createNamespace('samplenamespace', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -69,8 +105,8 @@ suite('API', () => {
     });
   });
 
-  test('namespace - char limit over', () => {
-    return helper.pulse.namespace('samplenamespacesamplenamespacesamplenamespacesamplenamespacesamplenamespace', {
+  test('createNamespace - char limit over', () => {
+    return helper.pulse.createNamespace('samplenamespacesamplenamespacesamplenamespacesamplenamespacesamplenamespace', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -82,8 +118,8 @@ suite('API', () => {
     });
   });
 
-  test('namespace - char invalid symbols', () => {
-    return helper.pulse.namespace('sample%namespace', {
+  test('createNamespace - char invalid symbols', () => {
+    return helper.pulse.createNamespace('sample%namespace', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -215,13 +251,13 @@ suite('API', () => {
   });
 
   test('"namespace" idempotency - return same namespace', async () => {
-    let a = await helper.pulse.namespace('testname', {
+    let a = await helper.pulse.createNamespace('testname', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
       },
     });
-    let b = await helper.pulse.namespace('testname', {
+    let b = await helper.pulse.createNamespace('testname', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -232,7 +268,7 @@ suite('API', () => {
 
   test('"namespace" idempotency - entry creation', async () => {
     for (let i = 0; i < 10; i++) {
-      await helper.pulse.namespace('testname', {
+      await helper.pulse.createNamespace('testname', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -254,7 +290,7 @@ suite('API', () => {
     let count = 0;
     await namespaces.scan({},
       {
-        limit:            250, 
+        limit:            250,
         handler:          (ns) => {
           count++;
         },
@@ -265,7 +301,7 @@ suite('API', () => {
 
   test('rotate namespace - one entry', async () => {
     var old_pass = slugid.v4();
-    
+
     await namespaces.create({
       namespace: 'testname',
       username: 'testname',
@@ -288,7 +324,7 @@ suite('API', () => {
 
   test('rotate namespace - two entry', async () => {
     var old_pass = slugid.v4();
-    
+
     await namespaces.create({
       namespace: 'testname1',
       username: 'testname',
@@ -327,7 +363,7 @@ suite('API', () => {
 
   test('rotate namespace - one of two entry', async () => {
     var old_pass = slugid.v4();
-    
+
     await namespaces.create({
       namespace: 'testname1',
       username: 'testname',

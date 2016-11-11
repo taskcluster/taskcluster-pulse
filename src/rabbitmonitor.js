@@ -20,16 +20,19 @@ class RabbitMonitor {
    * @param {string} config.taskcluster.amqpUrl     - The AMQP url to connect to. Eg. amqp://localhost.
    * @param {RabbitAlerter} rabbitAlerter           - Sends alerts based off various message queue statistics.
    * @param {RabbitManager} rabbitManager           - RabbitMQ client.
+   * @param {TaskClusterClient} pulse               - TaskCluster Pulse client.
    */
-  constructor({refreshInterval}, amqpUrl, rabbitAlerter, rabbitManager) {
+  constructor({refreshInterval}, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
     assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
+    assert(pulse, 'Must provide a TaskCluster Pulse client!');
     this.amqpUrl = amqpUrl;
     this.refreshInterval = refreshInterval;
     this.rabbitManager = rabbitManager;
     this.rabbitAlerter = rabbitAlerter;
+    this.pulse = pulse;
   }
 
   /**
@@ -121,8 +124,13 @@ class RabbitMonitor {
   /**
    * @param {Array.<RabbitMonitor.Stats>} stats
    */
-  sendAlerts(stats) {
-    stats.forEach(currentStats => this.rabbitAlerter.sendAlert(currentStats));
+  async sendAlerts(stats) {
+    console.log(Object.getOwnPropertyNames(this.pulse));
+    /*
+    const promises = stats.map(currentStats => this.pulse.Namespaces.load({namespace: currentStats.queueName}));
+    const namespaceResponses = await Promise.all(promises);
+    namespaceResponses.forEach(namespaceResponse => this.rabbitAlerter.sendAlert(currentStats, namespaceResponse));
+    */
   }
 }
 

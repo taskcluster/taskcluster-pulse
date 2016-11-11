@@ -17,7 +17,7 @@ suite('Rabbit Alerter', () => {
     return new RabbitMonitor.Stats(queueName, messages, rate);
   };
 
-  const createEmptyNamespace = () => {
+  const createEmptyNamespaceResponse = () => {
     return {
       contact: {
         method: '',
@@ -48,12 +48,12 @@ suite('Rabbit Alerter', () => {
 
   test('createPulseAlert', () => {
     const stats = createStats();
-    const namespace = createEmptyNamespace();
+    const namespaceResponse = createEmptyNamespaceResponse();
 
-    namespace.contact.method = 'pulse';
-    namespace.contact.payload.routingKey = 'rabbit-alerter-test';
+    namespaceResponse.contact.method = 'pulse';
+    namespaceResponse.contact.payload.routingKey = 'rabbit-alerter-test';
 
-    const pulseAlert = helper.alerter.createAlert(stats, namespace);
+    const pulseAlert = helper.alerter.createAlert(stats, namespaceResponse);
     assert(_.has(pulseAlert, 'payload'));
     assert(_.has(pulseAlert.payload, 'routingKey'));
     assert(_.has(pulseAlert.payload, 'message'));
@@ -61,12 +61,12 @@ suite('Rabbit Alerter', () => {
 
   test('createEmailAlert', () => {
     const stats = createStats();
-    const namespace = createEmptyNamespace();
+    const namespaceResponse = createEmptyNamespaceResponse();
 
-    namespace.contact.method = 'email';
-    namespace.contact.payload.address = 'alert@pulsetests.com';
+    namespaceResponse.contact.method = 'email';
+    namespaceResponse.contact.payload.address = 'alert@pulsetests.com';
 
-    const emailAlert = helper.alerter.createAlert(stats, namespace);
+    const emailAlert = helper.alerter.createAlert(stats, namespaceResponse);
     assert(_.has(emailAlert, 'payload'));
     assert(_.has(emailAlert.payload, 'address'));
     assert(_.has(emailAlert.payload, 'subject'));
@@ -76,12 +76,12 @@ suite('Rabbit Alerter', () => {
 
   test('createIRCAlert', () => {
     const stats = createStats();
-    const namespace = createEmptyNamespace();
+    const namespaceResponse = createEmptyNamespaceResponse();
 
-    namespace.contact.method = 'irc';
-    namespace.contact.payload.channel = '#taskcluster-test';
+    namespaceResponse.contact.method = 'irc';
+    namespaceResponse.contact.payload.channel = '#taskcluster-test';
 
-    const pulseAlert = helper.alerter.createAlert(stats, namespace);
+    const pulseAlert = helper.alerter.createAlert(stats, namespaceResponse);
     assert(_.has(pulseAlert, 'payload'));
     assert(_.has(pulseAlert.payload, 'channel'));
     assert(_.has(pulseAlert.payload, 'message'));
@@ -96,33 +96,33 @@ suite('Rabbit Alerter', () => {
     helper.alerter.notifier = mockNotifier;
 
     const stats = createStats();
-    const namespace = createEmptyNamespace();
+    const namespaceResponse = createEmptyNamespaceResponse();
 
-    namespace.contact.method = 'pulse';
-    helper.alerter.sendAlert(stats, namespace);
+    namespaceResponse.contact.method = 'pulse';
+    helper.alerter.sendAlert(stats, namespaceResponse);
     assert(!mockNotifier.pulse.called);
 
-    namespace.contact.method = 'email';
-    helper.alerter.sendAlert(stats, namespace);
+    namespaceResponse.contact.method = 'email';
+    helper.alerter.sendAlert(stats, namespaceResponse);
     assert(!mockNotifier.email.called);
 
-    namespace.contact.method = 'irc';
-    helper.alerter.sendAlert(stats, namespace);
+    namespaceResponse.contact.method = 'irc';
+    helper.alerter.sendAlert(stats, namespaceResponse);
     assert(!mockNotifier.irc.called);
 
     // This should exceed at leat one of the tolerances,
     // giving the alerter a better purpose to deliver alerts.
     stats.messages = 100;
-    namespace.contact.method = 'pulse';
-    helper.alerter.sendAlert(stats, namespace);
+    namespaceResponse.contact.method = 'pulse';
+    helper.alerter.sendAlert(stats, namespaceResponse);
     assert(mockNotifier.pulse.calledOnce);
 
-    namespace.contact.method = 'email';
-    helper.alerter.sendAlert(stats, namespace);
+    namespaceResponse.contact.method = 'email';
+    helper.alerter.sendAlert(stats, namespaceResponse);
     assert(mockNotifier.email.calledOnce);
 
-    namespace.contact.method = 'irc';
-    helper.alerter.sendAlert(stats, namespace);
+    namespaceResponse.contact.method = 'irc';
+    helper.alerter.sendAlert(stats, namespaceResponse);
     assert(mockNotifier.irc.calledOnce);
   });
 });
