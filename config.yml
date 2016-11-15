@@ -41,6 +41,7 @@ defaults:
 
   monitor:
     refreshInterval:              !env MONITOR_REFRESH_INTERVAL
+    queuePrefix:                  !env MONITOR_QUEUE_PREFIX
 
   alerter:
     messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE
@@ -84,6 +85,7 @@ test:
 
   monitor:
     refreshInterval: 1000
+    queuePrefix: 'taskcluster/'
 
   alerter:
     messageCountTolerance: 10

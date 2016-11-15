@@ -22,8 +22,9 @@ class RabbitMonitor {
    * @param {RabbitManager} rabbitManager           - RabbitMQ client.
    * @param {TaskClusterClient} pulse               - TaskCluster Pulse client.
    */
-  constructor({refreshInterval}, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
+  constructor({refreshInterval, queuePrefix}, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
+    assert(queuePrefix, 'Must provide a prefix for the taskcluster queue names!');
     assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
@@ -33,6 +34,7 @@ class RabbitMonitor {
     this.rabbitManager = rabbitManager;
     this.rabbitAlerter = rabbitAlerter;
     this.pulse = pulse;
+    this.queuePrefix = queuePrefix;
   }
 
   /**
@@ -46,13 +48,24 @@ class RabbitMonitor {
   }
 
   /**
-   *  Finds all names of existing queues starting with taskcluster/
+   *  Finds all names of existing queues whose names begin with the taskcluster
+   *  queue prefix.
    *
    *  @returns {Array.<string>}
    */
   async findTaskClusterQueues() {
     const queues = await this.rabbitManager.queues();
-    return queues.map(queue => queue.name).filter(queueName => queueName.startsWith('taskcluster/'));
+    return queues.map(queue => queue.name).filter(queueName => queueName.startsWith(this.queuePrefix));
+  }
+
+  /**
+   *  @param {string} taskClusterQueueName
+   *  @returns {string} The namespace given a taskcluster queue name.
+   */
+  namespace(taskClusterQueueName) {
+    const search = this.queuePrefix;
+    const position = taskClusterQueueName.indexOf(search) + search.length;
+    return taskClusterQueueName.substring(position);
   }
 
   /**
@@ -125,12 +138,15 @@ class RabbitMonitor {
    * @param {Array.<RabbitMonitor.Stats>} stats
    */
   async sendAlerts(stats) {
-    console.log(Object.getOwnPropertyNames(this.pulse));
-    /*
-    const promises = stats.map(currentStats => this.pulse.Namespaces.load({namespace: currentStats.queueName}));
+    // TODO: What if the queue or namespace suddenly disappears?
+    const promises = stats.map(currentStats => {
+      const namespace = this.namespace(currentStats.queueName);
+      return this.pulse.namespace(namespace);
+    });
     const namespaceResponses = await Promise.all(promises);
-    namespaceResponses.forEach(namespaceResponse => this.rabbitAlerter.sendAlert(currentStats, namespaceResponse));
-    */
+    namespaceResponses.forEach((namespaceResponse, index) => {
+      this.rabbitAlerter.sendAlert(stats[index], namespaceResponse);
+    });
   }
 }
 
