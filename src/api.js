@@ -28,15 +28,14 @@ module.exports = api;
  * Gets an overview of the rabbit cluster
  */
 api.declare({
-  method:   'get',
-  route:    '/overview',
-  name:     'overview',
-  title:    'Rabbit Overview',
-  output:   'rabbit-overview.json',
+  method:     'get',
+  route:      '/overview',
+  name:       'overview',
+  title:      'Rabbit Overview',
+  output:     'rabbit-overview.json',
+  stability:  'experimental',
   description: [
     'An overview of the Rabbit cluster',
-    '',
-    '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
@@ -51,15 +50,14 @@ api.declare({
  * Gets the list of exchanges in the rabbit cluster
  */
 api.declare({
-  method:   'get',
-  route:    '/exchanges',
-  name:     'exchanges',
-  title:    'Rabbit Exchanges',
-  output:   'exchanges-response.json',
+  method:     'get',
+  route:      '/exchanges',
+  name:       'exchanges',
+  title:      'Rabbit Exchanges',
+  output:     'exchanges-response.json',
+  stability:  'experimental',
   description: [
     'A list of exchanges in the rabbit cluster',
-    '',
-    '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
@@ -84,10 +82,9 @@ api.declare({
     ['pulse:namespace:<namespace>'],
   ],
   //todo later: deferAuth: true,
+  stability: 'experimental',
   description: [
     'Creates a namespace, given the taskcluster credentials with scopes.',
-    '',
-    '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
   let {namespace} = req.params;
@@ -118,10 +115,9 @@ api.declare({
     ['pulse:namespace:<namespace>'],
   ],
   //todo later: deferAuth: true,
+  stability: 'experimental',
   description: [
     'Gets a namespace, given the taskcluster credentials with scopes.',
-    '',
-    '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
   const {namespace} = req.params;
