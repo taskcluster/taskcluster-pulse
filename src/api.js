@@ -62,10 +62,15 @@ api.declare({
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
-  res.reply(
+  res.reply( 
     _.map( 
       await this.rabbit.exchanges(),
-      elem => _.pick(elem, ['name', 'type'])
+      elem => JSON.stringify(
+        _.pick( 
+          elem, 
+          ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments']
+        )
+      )
     )
   );
 });
