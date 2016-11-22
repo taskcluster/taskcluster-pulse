@@ -32,7 +32,7 @@ api.declare({
   route:    '/overview',
   name:     'overview',
   title:    'Rabbit Overview',
-  output:	  'rabbit-overview.json',		
+  output:   'rabbit-overview.json',		
   description: [
     'An overview of the Rabbit cluster',
     '',
@@ -63,9 +63,9 @@ api.declare({
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
-    _.map(
+    _.map( 
       await this.rabbit.exchanges(),
-      elem => elem.name
+      elem => _.pick(elem, ['name', 'type'])
     )
   );
 });
