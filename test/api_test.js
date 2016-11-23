@@ -33,15 +33,29 @@ suite('API', () => {
     return helper.pulse.exchanges();
   });
 
-  test('namespace', () => {
+  test('namespace - email', () => {
     return helper.pulse.namespace('samplenamespace', {
       contact: {
         method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
-        },
+        payload: {address: 'a@a.com'},
+      },
+    });
+  });
+
+  test('namespace - irc(user)', () => {
+    return helper.pulse.namespace('samplenamespace', {
+      contact: {
+        method: 'irc',
+        payload: {user: 'test'},
+      },
+    });
+  });
+
+  test('namespace - irc(channel)', () => {
+    return helper.pulse.namespace('samplenamespace', {
+      contact: {
+        method: 'irc',
+        payload: {channel: '#test'},
       },
     });
   });
@@ -50,11 +64,7 @@ suite('API', () => {
     return helper.pulse.namespace('samplenamespace', {
       contact: {
         method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
-        },
+        payload: {address: 'a@a.com'},
       },
     });
   });
@@ -63,11 +73,7 @@ suite('API', () => {
     return helper.pulse.namespace('samplenamespacesamplenamespacesamplenamespacesamplenamespacesamplenamespace', {
       contact: {
         method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
-        },
+        payload: {address: 'a@a.com'},
       },
     }).then(function() {
       assert(false, 'This shouldn\'t have worked');
@@ -80,11 +86,7 @@ suite('API', () => {
     return helper.pulse.namespace('sample%namespace', {
       contact: {
         method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
-        },
+        payload: {address: 'a@a.com'},
       },
     }).then(function() {
       assert(false, 'This shouldn\'t have worked');
@@ -216,21 +218,13 @@ suite('API', () => {
     let a = await helper.pulse.namespace('testname', {
       contact: {
         method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
-        },
+        payload: {address: 'a@a.com'},
       },
     });
     let b = await helper.pulse.namespace('testname', {
       contact: {
         method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
-        },
+        payload: {address: 'a@a.com'},
       },
     });
     assert(_.isEqual(a, b));
@@ -241,11 +235,7 @@ suite('API', () => {
       await helper.pulse.namespace('testname', {
         contact: {
           method: 'email',
-          payload: {
-            address: 'a@a.com',
-            subject: 'subject',
-            content: 'content',
-          },
+          payload: {address: 'a@a.com'},
         },
       });
     }
