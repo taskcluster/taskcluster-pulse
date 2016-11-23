@@ -12,7 +12,7 @@ suite('API', () => {
     //set up the namespace entities
     namespaces = await load('Namespaces', {profile: 'test', process: 'test'});
 
-  //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
+    //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
     await namespaces.ensureTable();
   });
 
