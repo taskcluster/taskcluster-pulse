@@ -65,12 +65,7 @@ api.declare({
   res.reply( 
     _.map( 
       await this.rabbit.exchanges(),
-      elem => JSON.stringify(
-        _.pick( 
-          elem, 
-          ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments']
-        )
-      )
+      elem => _.pick(elem, ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments'])
     )
   );
 });

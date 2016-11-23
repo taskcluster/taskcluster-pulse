@@ -1,11 +1,39 @@
 $schema:  http://json-schema.org/draft-04/schema#
 title:              "RabbitMQ Exchanges"
 description: |
-  An array of strings containing the names of exchanges in RabbitMQ
+  An array of RabbitMQ exchanges containing the details of RabbitMQ exchanges
 type: array
-items:
-    type: string
+items: 
+  type: object
+  properties:
+    name:
+      type: string
+      title: Name
+      description: The exchange's name
+    vhost:
+      type: string
+      title: Virtual Host
+      description: The exchange's vhost
+    type:
+      type: string
+      title: Type
+      description: The exchange's type
+    durable:
+      type: boolean
+      title: Durable
+      description: Whether or not the exchange survives broker restart
+    auto-delete:
+      type: boolean
+      title: Auto-Delete
+      description: Whether or not the exchange deletes when all queues are finished using it
+    arguments:
+      type: object
+      title: Arguments
+      properties: {}
+
 additionalProperties: false
 required:
-  - exchanges
+  - name
+  - vhost
+  - type
 
