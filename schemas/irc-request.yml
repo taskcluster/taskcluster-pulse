@@ -28,16 +28,7 @@ properties:
         description: |
           User to post the message to. Please note that you **must** supply
           either `user` or `channel`, you cannot supply both.
-      message:
-        type:           string
-        minLength:      1
-        maxLength:      510
-        description: |
-          IRC message to send as plain text.
-    maxProperties: 2
     additionalProperties: false
-    required:
-      - message
     oneOf:
       - required: [channel]
       - required: [user]
