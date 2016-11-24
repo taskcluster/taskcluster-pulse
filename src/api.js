@@ -32,7 +32,7 @@ api.declare({
   route:    '/overview',
   name:     'overview',
   title:    'Rabbit Overview',
-  output:	  'rabbit-overview.json',		
+  output:   'rabbit-overview.json',		
   description: [
     'An overview of the Rabbit cluster',
     '',
@@ -62,10 +62,10 @@ api.declare({
     '**Warning** this api end-point is **not stable**.',
   ].join('\n'),
 }, async function(req, res) {
-  res.reply(
-    _.map(
+  res.reply( 
+    _.map( 
       await this.rabbit.exchanges(),
-      elem => elem.name
+      elem => _.pick(elem, ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments'])
     )
   );
 });
