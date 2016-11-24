@@ -5,6 +5,7 @@ description: |
 type: array
 items: 
   type: object
+  title: Exchange
   properties:
     name:
       type: string
