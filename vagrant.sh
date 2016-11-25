@@ -1,18 +1,20 @@
 #!/bin/bash
 
-# Latest LTS as of Nov 22, 2016
-NODE_VERSION="6.9.1"
+# Install required system packages:
+# python & build-essential by some npm packages, libssl-dev by nvm
+apt-get -q update
+apt-get -qy upgrade
+apt-get -qy install python build-essential libssl-dev rabbitmq-server
 
-# Install new nodejs.
-_node_filename="node-v${NODE_VERSION}-linux-x64.tar.xz"
-_node_url="https://nodejs.org/dist/v${NODE_VERSION}/${_node_filename}"
-cd /usr/local
-wget -nv "$_node_url"
-mkdir "node-${NODE_VERSION}"
-tar xf "${_node_filename}" -C "node-${NODE_VERSION}" --strip-components=1
-rm "${_node_filename}"
-# Overwrite existing nodejs PATH env.
-echo "export PATH=\$PATH:/usr/local/node-${NODE_VERSION}/bin" > /etc/profile.d/nodejs.sh
+# Install the latest LTS node (and npm) via nvm.
+# Run commands in a LOGIN shell (note the '-') to ensure correct envs and working dir.
+su - ubuntu -- <<"EOF"
+curl -so- https://raw.githubusercontent.com/creationix/nvm/v0.32.1/install.sh | bash
+# Activate nvm now.
+. ~/.nvm/nvm.sh
+nvm install --lts
+nvm alias default node
+EOF
 
 # Enable rabbitmq-management plugin.
 rabbitmq-plugins enable rabbitmq_management
