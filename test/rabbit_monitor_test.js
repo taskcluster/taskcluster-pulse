@@ -52,9 +52,10 @@ suite('Rabbit Monitor', () => {
     const stub = sinon.stub(helper.monitor, 'sendAlerts');
 
     const queueNames = [namespaceOne, namespaceTwo];
+    const verbose = false;
     const refreshTimes = 3;
     helper.monitor.refreshInterval = 50;
-    await helper.monitor.monitorQueues(queueNames, refreshTimes);
+    await helper.monitor.monitorQueues(queueNames, verbose, refreshTimes);
 
     assert.equal(stub.callCount, 3);
     helper.monitor.sendAlerts.restore();
@@ -62,12 +63,14 @@ suite('Rabbit Monitor', () => {
 
   test('sendAlerts', async () => {
     const dummyNamespaceResponse = {
-      contact: {
-        method: 'email',
-        payload: {
-          address: 'a@a.com',
-          subject: 'subject',
-          content: 'content',
+      _properties: {
+        contact: {
+          method: 'email',
+          payload: {
+            address: 'a@a.com',
+            subject: 'subject',
+            content: 'content',
+          },
         },
       },
     };
@@ -146,5 +149,20 @@ suite('Rabbit Monitor', () => {
     });
 
     await namespaceFixture.teardownAPI();
+  });
+
+  test('runThrowsExceptionNoTaskClusterQueues', async () => {
+    await helper.rabbit.deleteQueue(taskClusterQueueOne);
+    await helper.rabbit.deleteQueue(taskClusterQueueTwo);
+
+    try {
+      await helper.monitor.run();
+      assert(false);
+    } catch (error) {
+      assert(error.message.includes(helper.monitor.queuePrefix));
+    }
+
+    await helper.rabbit.createQueue(taskClusterQueueOne);
+    await helper.rabbit.createQueue(taskClusterQueueTwo);
   });
 });

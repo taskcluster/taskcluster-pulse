@@ -39,11 +39,14 @@ class RabbitMonitor {
 
   /**
    *  Start the monitor.
+   *  @param {boolean} verbose   - Enable to log queue statistics in real time
    */
-  async run() {
+  async run(verbose=false) {
     const queueNames = await this.findTaskClusterQueues();
     if (queueNames.length > 0) {
-      await this.monitorQueues(queueNames);
+      await this.monitorQueues(queueNames, verbose);
+    } else {
+      throw new Error(`Could not find any queues prefixed with ${this.queuePrefix}`);
     }
   }
 
@@ -73,12 +76,13 @@ class RabbitMonitor {
    * snapshots > 0.
    *
    * @param {Array.<string>} queueName   - The names of the queues we wish to monitor.
+   * @param {boolean} verbose            - Enable to log stats in real time.
    * @param {number} snapshots           - The number of times we wish to query the queues for stats.
    *                                       If this is 0, then the queues will be
    *                                       monitered until RabbitMonitor.stop() is called.
    */
-  monitorQueues(queueNames, snapshots=0) {
-    return new Promise(resolve => this.monitorQueuesOverInterval(queueNames, snapshots, resolve));
+  monitorQueues(queueNames, verbose=false, snapshots=0) {
+    return new Promise(resolve => this.monitorQueuesOverInterval(queueNames, snapshots, resolve, verbose));
   }
 
   /**
@@ -111,8 +115,9 @@ class RabbitMonitor {
    * @param {Array.<string>} queueNames  - The names of the queues we wish to sample statistics from.
    * @param {number} snapshots           - The amount of snapshots of statistics to take before halting.
    * @param {resolve} resolvePromise     - Call this to resolve the promise.
+   * @param {boolean} verbose            - Enable to log stats in real time.
    */
-  monitorQueuesOverInterval(queueNames, snapshots, resolvePromise) {
+  monitorQueuesOverInterval(queueNames, snapshots, resolvePromise, verbose) {
     if (this.monitoringInterval) {
       console.warn('Already monitoring queues, aborting operation.');
       return;
@@ -130,6 +135,9 @@ class RabbitMonitor {
       }
 
       const stats = await this.collectStats(queueNames);
+      if (verbose) {
+        console.log(stats);
+      }
       this.sendAlerts(stats);
     }, this.refreshInterval);
   }
@@ -141,11 +149,12 @@ class RabbitMonitor {
     // TODO: What if the queue or namespace suddenly disappears?
     const promises = stats.map(currentStats => {
       const namespace = this.namespace(currentStats.queueName);
-      return this.pulse.namespace(namespace);
+      const namespaceResponse = this.pulse.namespace(namespace);
+      return namespaceResponse._properties;
     });
     const namespaceResponses = await Promise.all(promises);
-    namespaceResponses.forEach((namespaceResponse, index) => {
-      this.rabbitAlerter.sendAlert(stats[index], namespaceResponse);
+    namespaceResponses.forEach((namespaceProperties, index) => {
+      this.rabbitAlerter.sendAlert(stats[index], namespaceProperties);
     });
   }
 }
