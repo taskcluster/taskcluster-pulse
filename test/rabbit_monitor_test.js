@@ -99,20 +99,13 @@ suite('Rabbit Monitor', () => {
       await helper.monitor.pulse.createNamespace(namespaceOne, {
         contact: {
           method: 'email',
-          payload: {
-            address: 'a@a.com',
-            subject: 'subject',
-            content: 'content',
-          },
+          payload: {address: 'a@a.com'},
         },
       });
       await helper.monitor.pulse.createNamespace(namespaceTwo, {
         contact: {
           method: 'irc',
-          payload: {
-            channel: '#taskcluster-test',
-            message: 'test',
-          },
+          payload: {channel: '#taskcluster-test'},
         },
       });
       // TODO: Once the pulse contact method schema is available, test that one as well.
