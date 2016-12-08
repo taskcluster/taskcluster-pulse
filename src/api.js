@@ -154,7 +154,7 @@ function invalidNamespaceResponse(request, response) {
  * @param {string} namespace
  * @returns {Boolean} True if namespace is valid.
  */
-function isNamespaceValid(namespace) {
+        function isNamespaceValid(namespace) {
   return namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace);
 }
 
@@ -176,8 +176,8 @@ async function setNamespace(context, namespace, contact) {
       contact:    contact,
     });
 
-    await context.rabbit.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
-    await context.rabbit.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
+    await context.rabbit.createOrUpdateUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
+    await context.rabbit.createOrUpdateUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
 
     //set up user pairs in rabbitmq, both users are used for auth rotations
     await context.rabbit.setUserPermissions(
