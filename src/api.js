@@ -154,7 +154,7 @@ function invalidNamespaceResponse(request, response) {
  * @param {string} namespace
  * @returns {Boolean} True if namespace is valid.
  */
-        function isNamespaceValid(namespace) {
+function isNamespaceValid(namespace) {
   return namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace);
 }
 
