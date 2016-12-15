@@ -3,6 +3,7 @@
  * @module rabbitmonitor
  */
 const assert = require('assert');
+const taskcluster = require('taskcluster-client');
 
 /**
  * An interface for monitoring all rabbitmq queues whose names
@@ -13,39 +14,61 @@ const assert = require('assert');
  */
 class RabbitMonitor {
   /**
-   * @param {string} amqpUrl               - The AMQP url to connect to. Eg. amqp://localhost.
-   * @param {number} refreshInterval       - Interval in milliseconds at which new
-   *                                         statistics are produced from
-   *                                         monitoring taskcluster queues.
-   * @param {RabbitManager} rabbitManager
+   * @param {number} config.monitor.refreshInterval - Interval in milliseconds at which new
+   *                                                  statistics are produced from
+   *                                                  monitoring taskcluster queues.
+   * @param {string} config.taskcluster.amqpUrl     - The AMQP url to connect to. Eg. amqp://localhost.
+   * @param {RabbitAlerter} rabbitAlerter           - Sends alerts based off various message queue statistics.
+   * @param {RabbitManager} rabbitManager           - RabbitMQ client.
+   * @param {TaskClusterClient} pulse               - TaskCluster Pulse client.
    */
-  constructor({amqpUrl, refreshInterval}, rabbitManager) {
-    assert(amqpUrl, 'Must provide an AMQP URL!');
+  constructor({refreshInterval, queuePrefix}, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
+    assert(queuePrefix, 'Must provide a prefix for the taskcluster queue names!');
+    assert(amqpUrl, 'Must provide an AMQP URL!');
+    assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
+    assert(pulse, 'Must provide a TaskCluster Pulse client!');
     this.amqpUrl = amqpUrl;
     this.refreshInterval = refreshInterval;
     this.rabbitManager = rabbitManager;
+    this.rabbitAlerter = rabbitAlerter;
+    this.pulse = pulse;
+    this.queuePrefix = queuePrefix;
   }
 
   /**
    *  Start the monitor.
+   *  @param {boolean} verbose   - Enable to log queue statistics in real time
    */
-  async run() {
+  async run(verbose=false) {
     const queueNames = await this.findTaskClusterQueues();
     if (queueNames.length > 0) {
-      await this.monitorQueues(queueNames);
+      await this.monitorQueues(queueNames, verbose);
+    } else {
+      throw new Error(`Could not find any queues prefixed with ${this.queuePrefix}`);
     }
   }
 
   /**
-   *  Finds all names of existing queues starting with taskcluster/
+   *  Finds all names of existing queues whose names begin with the taskcluster
+   *  queue prefix.
    *
    *  @returns {Array.<string>}
    */
   async findTaskClusterQueues() {
     const queues = await this.rabbitManager.queues();
-    return queues.map(queue => queue.name).filter(queueName => queueName.startsWith('taskcluster/'));
+    return queues.map(queue => queue.name).filter(queueName => queueName.startsWith(this.queuePrefix));
+  }
+
+  /**
+   *  @param {string} taskClusterQueueName
+   *  @returns {string} The namespace given a taskcluster queue name.
+   */
+  namespace(taskClusterQueueName) {
+    const search = this.queuePrefix;
+    const position = taskClusterQueueName.indexOf(search) + search.length;
+    return taskClusterQueueName.substring(position);
   }
 
   /**
@@ -53,12 +76,13 @@ class RabbitMonitor {
    * snapshots > 0.
    *
    * @param {Array.<string>} queueName   - The names of the queues we wish to monitor.
+   * @param {boolean} verbose            - Enable to log stats in real time.
    * @param {number} snapshots           - The number of times we wish to query the queues for stats.
    *                                       If this is 0, then the queues will be
    *                                       monitered until RabbitMonitor.stop() is called.
    */
-  monitorQueues(queueNames, snapshots=0) {
-    return new Promise(resolve => this.monitorQueuesOverInterval(queueNames, snapshots, resolve));
+  monitorQueues(queueNames, verbose=false, snapshots=0) {
+    return new Promise(resolve => this.monitorQueuesOverInterval(queueNames, snapshots, resolve, verbose));
   }
 
   /**
@@ -80,18 +104,8 @@ class RabbitMonitor {
    *                                      once all promises have been resolved.
    */
   async collectStats(queueNames) {
-    return await Promise.all(queueNames.map(async queueName => this.createStats(queueName)));
-  }
-
-  /**
-   * @private
-   * @param {string} queueName - The name of the queue from which we collect
-   *                             stats from.
-   * @returns {Stats}
-   */
-  async createStats(queueName) {
-    const queue = await this.rabbitManager.queue(queueName);
-    return new Stats(queueName, queue.messages, queue.messages_details.rate);
+    const queues = await Promise.all(queueNames.map(async queueName => await this.rabbitManager.queue(queueName)));
+    return queues.map(queue => new RabbitMonitor.Stats(queue.name, queue.messages, queue.messages_details.rate));
   }
 
   /**
@@ -101,8 +115,9 @@ class RabbitMonitor {
    * @param {Array.<string>} queueNames  - The names of the queues we wish to sample statistics from.
    * @param {number} snapshots           - The amount of snapshots of statistics to take before halting.
    * @param {resolve} resolvePromise     - Call this to resolve the promise.
+   * @param {boolean} verbose            - Enable to log stats in real time.
    */
-  monitorQueuesOverInterval(queueNames, snapshots, resolvePromise) {
+  monitorQueuesOverInterval(queueNames, snapshots, resolvePromise, verbose) {
     if (this.monitoringInterval) {
       console.warn('Already monitoring queues, aborting operation.');
       return;
@@ -118,8 +133,29 @@ class RabbitMonitor {
         }
         timesMonitored++;
       }
-      this.stats = await this.collectStats(queueNames);
+
+      const stats = await this.collectStats(queueNames);
+      if (verbose) {
+        console.log(stats);
+      }
+      this.sendAlerts(stats);
     }, this.refreshInterval);
+  }
+
+  /**
+   * @param {Array.<RabbitMonitor.Stats>} stats
+   */
+  async sendAlerts(stats) {
+    // TODO: What if the queue or namespace suddenly disappears?
+    const promises = stats.map(currentStats => {
+      const namespace = this.namespace(currentStats.queueName);
+      const namespaceResponse = this.pulse.namespace(namespace);
+      return namespaceResponse._properties;
+    });
+    const namespaceResponses = await Promise.all(promises);
+    namespaceResponses.forEach((namespaceProperties, index) => {
+      this.rabbitAlerter.sendAlert(stats[index], namespaceProperties);
+    });
   }
 }
 
@@ -133,13 +169,13 @@ class RabbitMonitor {
  * @property {number} rate      - The amount of messages which are published to
  *                                the queue per second.
  */
-class Stats {
+RabbitMonitor.Stats = class {
   constructor(queueName, messages, rate) {
     this.queueName = queueName;
     this.timestamp = Date.now();
     this.messages = messages;
     this.rate = rate;
   }
-}
+};
 
 module.exports = RabbitMonitor;

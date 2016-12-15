@@ -5,7 +5,7 @@ defaults:
     exchangePrefix: v1/
     namespaceTableName: 'PulseNamespaces'
     namespacesExpirationDelay: '- 1 hour'
-    namespacesRotationDelay: '- 1 hour'
+    amqpUrl: !env TASKCLUSTER_AMQP_URL
 
   aws:
     accessKeyId:      !env AWS_ACCESS_KEY_ID
@@ -37,12 +37,15 @@ defaults:
     payloadSize:              !env STRESSOR_PAYLOAD_SIZE
     uploadRate:               !env STRESSOR_UPLOAD_RATE
     messageCount:             !env STRESSOR_MESSAGE_COUNT
-    amqpUrl:                  !env STRESSOR_AMQP_URL
     targetQueue:              !env STRESSOR_TARGET_QUEUE
 
   monitor:
-    amqpUrl:                  !env MONITOR_AMQP_URL
-    refreshInterval:          !env MONITOR_REFRESH_INTERVAL
+    refreshInterval:              !env MONITOR_REFRESH_INTERVAL
+    queuePrefix:                  !env MONITOR_QUEUE_PREFIX
+
+  alerter:
+    messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE
+    messagePublishRateTolerance:  !env ALERTER_MESSAGE_PUBLISH_RATE_TOLERANCE
 
 production:
   server:
@@ -51,6 +54,25 @@ production:
     env:                      'production'
 
 test:
+  app:
+    amqpUrl: 'amqp://localhost'
+
+  taskcluster:
+    credentials:
+      clientId:       'test-client'
+      accessToken:    'none'
+
+  rabbit:
+    username: 'guest'
+    password: 'guest'
+    baseUrl:  'http://localhost:15672/api'
+
+  stressor:
+    payloadSize: 20
+    uploadRate: 50
+    messageCount: 5
+    targetQueue: 'stressor queue'
+
   server:
     publicUrl:        http://localhost:60403
     port:             60403
@@ -58,18 +80,13 @@ test:
     trustProxy:       false
     env:              development
 
-  stressor:
-    payloadSize: 20
-    uploadRate: 50
-    messageCount: 5
-    amqpUrl: 'amqp://localhost'
-    targetQueue: 'stressor queue'
-
-  monitor:
-    amqpUrl: 'amqp://localhost'
-    refreshInterval: 1000
-
   azure:
     account:  "inMemory"
 
+  monitor:
+    refreshInterval: 1000
+    queuePrefix: 'taskcluster/'
 
+  alerter:
+    messageCountTolerance: 10
+    messagePublishRateTolerance: 5

@@ -1,5 +1,4 @@
 let assert      = require('assert');
-let Promise     = require('promise');
 let path        = require('path');
 let _           = require('lodash');
 let mocha       = require('mocha');
@@ -11,6 +10,7 @@ let api         = require('../lib/api');
 let load        = require('../lib/main');
 let Rabbit      = require('../lib/rabbitmanager');
 let Monitor     = require('../lib/rabbitmonitor');
+let Alerter     = require('../lib/rabbitalerter');
 let data        = require('../lib/data');
 
 // Load configuration
@@ -39,15 +39,19 @@ mocha.before(async () => {
   helper.Pulse = taskcluster.createClient(reference);
   helper.pulse = new helper.Pulse({
     baseUrl: helper.baseUrl,
-    credentials: {
-      clientId:       'test-client',
-      accessToken:    'none',
-    },
+    credentials: cfg.taskcluster.credentials,
   });
 
   helper.rabbit = new Rabbit(cfg.rabbit);
-  helper.stressor = new Stressor(cfg.stressor, new Rabbit(cfg.rabbit));
-  helper.monitor = new Monitor(cfg.monitor, new Rabbit(cfg.rabbit));
+  helper.stressor = new Stressor(cfg.stressor, cfg.app.amqpUrl, new Rabbit(cfg.rabbit));
+  helper.alerter = new Alerter(cfg.alerter, cfg.taskcluster.credentials);
+  helper.monitor = new Monitor(
+    cfg.monitor,
+    cfg.app.amqpUrl,
+    new Alerter(cfg.alerter, cfg.taskcluster.credentials),
+    new Rabbit(cfg.rabbit),
+    helper.pulse
+  );
 });
 
 mocha.after(async () => {

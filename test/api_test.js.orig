@@ -33,8 +33,13 @@ suite('API', () => {
     return helper.pulse.exchanges();
   });
 
+<<<<<<< a4774ac9fd5b39746e69512d2370bc7e965a179c
   test('namespace - email', () => {
+    return helper.pulse.namespace('samplenamespace', {
+=======
+  test('createNamespace', () => {
     return helper.pulse.createNamespace('samplenamespace', {
+>>>>>>> Get namespace repsonses from API
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -43,7 +48,7 @@ suite('API', () => {
   });
 
   test('namespace - irc(user)', () => {
-    return helper.pulse.createNamespace('samplenamespace', {
+    return helper.pulse.namespace('samplenamespace', {
       contact: {
         method: 'irc',
         payload: {user: 'test'},
@@ -52,7 +57,7 @@ suite('API', () => {
   });
 
   test('namespace - irc(channel)', () => {
-    return helper.pulse.createNamespace('samplenamespace', {
+    return helper.pulse.namespace('samplenamespace', {
       contact: {
         method: 'irc',
         payload: {channel: '#test'},
@@ -64,8 +69,12 @@ suite('API', () => {
     const namespace = 'foobar';
     const namespaceInfo = {
       contact: {
-        method: 'irc',
-        payload: {channel: '#test'},
+        method: 'email',
+        payload: {
+          address: 'a@a.com',
+          subject: 'subject',
+          content: 'content',
+        },
       },
     };
     await helper.pulse.createNamespace(namespace, namespaceInfo);
@@ -286,7 +295,7 @@ suite('API', () => {
     let count = 0;
     await namespaces.scan({},
       {
-        limit:            250,
+        limit:            250, 
         handler:          (ns) => {
           count++;
         },
@@ -297,7 +306,7 @@ suite('API', () => {
 
   test('rotate namespace - one entry', async () => {
     var old_pass = slugid.v4();
-
+    
     await namespaces.create({
       namespace: 'testname',
       username: 'testname',
@@ -320,7 +329,7 @@ suite('API', () => {
 
   test('rotate namespace - two entry', async () => {
     var old_pass = slugid.v4();
-
+    
     await namespaces.create({
       namespace: 'testname1',
       username: 'testname',
@@ -359,7 +368,7 @@ suite('API', () => {
 
   test('rotate namespace - one of two entry', async () => {
     var old_pass = slugid.v4();
-
+    
     await namespaces.create({
       namespace: 'testname1',
       username: 'testname',
