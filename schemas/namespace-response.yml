@@ -8,14 +8,15 @@ properties:
     type:           string
     title:          Namespace
     description:    The name of the namespace created
-  username:
+  connectionString:
     type:           string
-    title:          Username
-    description:    The username created for authentication
-  password:
+    title:          Connection string
+    description:    The base AMQP URI for connection containing username and password
+  expires:
     type:           string
-    title:          Password
-    description:    The password created for authentication
+    format:         date-time
+    title:          Expiration
+    description:    The expiration of this Pulse user
   contact:
     type:           object
     title:          Contact Information
@@ -26,7 +27,6 @@ properties:
 additionalProperties: false
 required:
   - namespace
-  - username
-  - password
+  - connectionString
+  - expires
   - contact
-

@@ -95,10 +95,12 @@ api.declare({
   }
 
   let newNamespace = await setNamespace(this, namespace, contact);
+  let username = this.Namespaces.getRotationUsername(newNamespace);
+  let password = newNamespace.password;
   res.reply({
     namespace:  newNamespace.namespace,
-    username:   this.Namespaces.getRotationUsername(newNamespace),
-    password:   newNamespace.password,
+    connectionString: buildPulseConnectionString(username, password),
+    expires:    newNamespace.expires.toJSON(),
     contact:    newNamespace.contact,
   });
 });
@@ -203,4 +205,23 @@ async function setNamespace(context, namespace, contact) {
     newNamespace = await context.Namespaces.load({namespace: namespace});
   }
   return newNamespace;
+}
+
+/**
+ * @param {string} username
+ * @param {string} password
+ * @returns {string} connectionString built from the provided username/password.
+ */
+function buildPulseConnectionString(username, password) {
+  // TODO put hostname, port, etc. in configuration.
+  return [
+    'amqps://',         // Ensure that we're using SSL
+    username,
+    ':',
+    password,
+    '@',
+    'pulse.mozilla.org',
+    ':',
+    5671,               // Port for SSL
+  ].join('');
 }
