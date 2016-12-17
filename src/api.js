@@ -95,8 +95,8 @@ api.declare({
   }
 
   let newNamespace = await setNamespace(this, namespace, contact);
-  let username = this.Namespaces.getRotationUsername(newNamespace);
-  let password = newNamespace.password;
+  const username = this.Namespaces.getRotationUsername(newNamespace);
+  const password = newNamespace.password;
   res.reply({
     namespace:  newNamespace.namespace,
     connectionString: buildPulseConnectionString(username, password),
@@ -113,13 +113,14 @@ api.declare({
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Get namespace information',
+  output:   'namespace-response.json',
   scopes:   [
     ['pulse:namespace:<namespace>'],
   ],
   //todo later: deferAuth: true,
   stability: 'experimental',
   description: [
-    'Gets a namespace, given the taskcluster credentials with scopes.',
+    'Gets the information of a namespace, given the taskcluster credentials with necessary scopes.',
   ].join('\n'),
 }, async function(req, res) {
   const {namespace} = req.params;
@@ -129,8 +130,15 @@ api.declare({
   }
 
   try {
-    const namespaceResponse = await this.Namespaces.load({namespace: namespace});
-    res.reply(namespaceResponse);
+    const namespaceInfo = await this.Namespaces.load({namespace: namespace});
+    const username = this.Namespaces.getRotationUsername(namespaceInfo);
+    const password = namespaceInfo.password;
+    res.reply({
+      namespace:  namespaceInfo.namespace,
+      connectionString: buildPulseConnectionString(username, password),
+      expires:    namespaceInfo.expires.toJSON(),
+      contact:    namespaceInfo.contact,
+    });
   } catch (error) {
     return res.status(404).json({
       message: `Could not find namespace ${namespace}`,
