@@ -1,7 +1,7 @@
 $schema:  http://json-schema.org/draft-04/schema#
 title:              "Namespace Response"
 description: |
-  Response from a namespace creation of query request.
+  Response from a namespace creation or query request.
 type: object
 properties:
   namespace:
