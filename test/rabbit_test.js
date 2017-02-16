@@ -1,8 +1,12 @@
-suite('Rabbit Wrapper', () => {
+suite('Rabbit Wrapper', function() {
   const assert = require('assert');
   const slugid = require('slugid');
   const _ = require('lodash');
   const helper = require('./helper');
+
+  if (!helper.haveRabbitMq) {
+    this.pending = true;
+  }
 
   let usernames = [];
   let queuenames = [];

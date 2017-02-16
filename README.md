@@ -23,21 +23,27 @@ Testing
 
 Steps before running the test:
 
-1. Install rabbitmq locally:
-   * macOS: `brew update && brew install rabbitmq`
-   * Linux: install rabbitmq from the repository of your distribution
-2. Start rabbitmq: `rabbitmq-server`.
-3. Enable management API: `rabbitmq-plugins enable rabbitmq_management`
-4. Create a `user-config.yml`: copy over `user-config-example.yml` (it has the default
-   user, password and port of rabbitmq filled in).
-5. `npm install`
+1. Run rabbitmq.  Either:
+    * Install rabbitmq locally:
+       * macOS: `brew update && brew install rabbitmq`
+       * Linux: install rabbitmq from the repository of your distribution
+    * Start rabbitmq: `rabbitmq-server`.
+    * Enable management API: `rabbitmq-plugins enable rabbitmq_management`
+   or
+    * Run `docker run -ti --rm -p 15672:15672 -p 5672:5672 rabbitmq:management-alpine`
+1. Copy `user-config-example.yml` to `user-config.yml` unmodified
+1. `npm install`
 
 To run the test, use `npm test`. You can set `DEBUG=taskcluster-pulse,test` if you want to
 see what's going on.
 
-After each test, flush rabbitmq database with `rabbitmqctl reset`. (The test suite adds
-and removes users during the test. Flushing the database ensures nothing is leaked between
-tests.)
+Note that you can run the tests with no `user-config.yml`, but most are skipped because they
+require a RabbitMQ instance.
+
+After each test, flush rabbitmq database with `rabbitmqctl reset` or by
+stopping and re-starting the docker container.. (The test suite adds and
+removes users during the test. Flushing the database ensures nothing is leaked
+between tests.)
 
 ## Post-Deployment Verification
 

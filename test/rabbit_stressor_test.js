@@ -1,7 +1,11 @@
-suite('Rabbit Stressor', () => {
+suite('Rabbit Stressor', function() {
   const assert = require('assert');
   const _ = require('lodash');
   const helper = require('./helper');
+
+  if (!helper.haveRabbitMq) {
+    this.pending = true;
+  }
 
   test('connect', async () => {
     await helper.stressor.connect('amqp://localhost');

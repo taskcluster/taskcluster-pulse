@@ -4,6 +4,9 @@ env:
   global:
   - DEBUG='base:app:request,auth:*,server,test:*,pulse'
   - CXX=g++-4.8
+  - RABBIT_USERNAME=guest
+  - RABBIT_PASSWORD=guest
+  - RABBIT_BASE_URL=http://localhost:15672/api 
 node_js:
 - '6'
 cache:
