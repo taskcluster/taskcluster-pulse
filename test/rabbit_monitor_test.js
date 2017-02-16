@@ -1,4 +1,4 @@
-suite('Rabbit Monitor', () => {
+suite('Rabbit Monitor', function() {
   const assert = require('assert');
   const sinon = require('sinon');
   const _ = require('lodash');
@@ -10,6 +10,10 @@ suite('Rabbit Monitor', () => {
   const namespaceTwo = 'two';
   const taskClusterQueueOne = 'taskcluster/one';
   const taskClusterQueueTwo = 'taskcluster/two';
+
+  if (!helper.haveRabbitMq) {
+    this.pending = true;
+  }
 
   setup(async () => {
     await helper.rabbit.createQueue(namespaceOne);

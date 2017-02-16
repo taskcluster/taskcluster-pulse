@@ -1,2 +1,7 @@
 ---
 defaults:
+  # You will need to set this up; see README.md
+  rabbit:
+    username: 'guest'
+    password: 'guest'
+    baseUrl:  'http://localhost:15672/api'

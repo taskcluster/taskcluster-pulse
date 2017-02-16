@@ -26,12 +26,23 @@ let helper = module.exports = {};
 
 let webServer = null;
 
+helper.haveRabbitMq = !!cfg.rabbit.username;
+helper.requiresRabbitMq = fn => helper.haveRabbitMq ? fn : undefined;
+
 // Setup before tests
 mocha.before(async () => {
   // Create mock authentication server
   testing.fakeauth.start(testclients);
 
-  webServer = await load('server', {profile: 'test', process: 'test'});
+  let overwrites = {profile: 'test', process: 'test'};
+
+  // if there are no rabbit credentials, stub out the Rabbit instance;
+  // any affected tests should set `this.pending = true` in this case.
+  if (!helper.haveRabbitMq) {
+    overwrites.rabbit = {};
+  }
+
+  webServer = await load('server', overwrites);
 
   // Create client for working with API
   helper.baseUrl = 'http://localhost:' + webServer.address().port + '/v1';
@@ -42,14 +53,14 @@ mocha.before(async () => {
     credentials: cfg.taskcluster.credentials,
   });
 
-  helper.rabbit = new Rabbit(cfg.rabbit);
-  helper.stressor = new Stressor(cfg.stressor, cfg.app.amqpUrl, new Rabbit(cfg.rabbit));
+  helper.rabbit = await load('rabbit', overwrites);
+  helper.stressor = new Stressor(cfg.stressor, cfg.app.amqpUrl, helper.rabbit);
   helper.alerter = new Alerter(cfg.alerter, cfg.taskcluster.credentials);
   helper.monitor = new Monitor(
     cfg.monitor,
     cfg.app.amqpUrl,
     new Alerter(cfg.alerter, cfg.taskcluster.credentials),
-    new Rabbit(cfg.rabbit),
+    helper.rabbit,
     helper.pulse
   );
 });

@@ -1,9 +1,13 @@
-suite('Rabbit Alerter', () => {
+suite('Rabbit Alerter', function() {
   const assert = require('assert');
   const sinon = require('sinon');
   const _ = require('lodash');
   const helper = require('./helper');
   const RabbitMonitor = require('../lib/rabbitmonitor');
+
+  if (!helper.haveRabbitMq) {
+    this.pending = true;
+  }
 
   const queueOne = 'one';
   const queueTwo = 'two';
