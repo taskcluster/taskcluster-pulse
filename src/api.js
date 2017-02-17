@@ -20,6 +20,9 @@ let api = new API({
     'rabbit', // An instance of rabbitmanager
     'Namespaces', //An instance of the namespace table manager
   ],
+  errorCodes: {
+    InvalidNamespace: 400,
+  },
 });
 
 module.exports = api;
@@ -130,9 +133,9 @@ api.declare({
     const namespaceResponse = await this.Namespaces.load({namespace: namespace});
     res.reply(namespaceResponse);
   } catch (error) {
-    return res.status(404).json({
-      message: `Could not find namespace ${namespace}`,
-    });
+    return res.reportError('ResourceNotFound',
+        `Could not find namespace ${namespace}`,
+        {});
   }
 });
 
@@ -142,11 +145,11 @@ api.declare({
  * @returns {Object} A 400 error indicating that the namespace was invalid.
  */
 function invalidNamespaceResponse(request, response) {
-  return response.status(400).json({
-    message: 'Namespace provided must be at most 64 bytes and contain only these characters: [A-Za-z-0-9_-]',
-    error: {
-      namespace:  request.params.namespace,
-    },
+  return response.reportError('InvalidNamespace', [
+    'Namespace provided must be at most 64 bytes, and contain only these characters: ',
+    '[A-Za-z-0-9_:-]',
+  ].join('\n'), {
+    namespace:  request.params.namespace,
   });
 }
 
