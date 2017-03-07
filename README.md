@@ -48,3 +48,7 @@ between tests.)
 ## Post-Deployment Verification
 
 We need to figure this out before this is turned on for real.
+
+## Service Owner
+
+Servie Owner: bstack@mozilla.com
