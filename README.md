@@ -32,9 +32,9 @@ Steps before running the test:
    or
     * Run `docker run -ti --rm -p 15672:15672 -p 5672:5672 rabbitmq:management-alpine`
 1. Copy `user-config-example.yml` to `user-config.yml` unmodified
-1. `npm install`
+1. `yarn install`
 
-To run the test, use `npm test`. You can set `DEBUG=taskcluster-pulse,test` if you want to
+To run the test, use `yarn test`. You can set `DEBUG=taskcluster-pulse,test` if you want to
 see what's going on.
 
 Note that you can run the tests with no `user-config.yml`, but most are skipped because they

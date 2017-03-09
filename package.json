@@ -52,8 +52,9 @@
     "mocha": "^3.0.2",
     "sinon": "^1.17.6"
   },
+  "engine-strict": true,
   "engines": {
-    "node": "^6.0.0",
-    "npm": "^3.7.3"
+    "node": "7.7.1",
+    "yarn": "0.21.3"
   }
 }

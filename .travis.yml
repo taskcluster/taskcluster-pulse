@@ -8,8 +8,9 @@ env:
   - RABBIT_PASSWORD=guest
   - RABBIT_BASE_URL=http://localhost:15672/api 
 node_js:
-- '6'
+- '7'
 cache:
+  yarn: true
   directories:
     - node_modules
 services:
@@ -20,4 +21,4 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - g++-4.8
-script: npm test
+script: yarn test
