@@ -95,10 +95,12 @@ api.declare({
   }
 
   let newNamespace = await setNamespace(this, namespace, contact);
+  const username = this.Namespaces.getRotationUsername(newNamespace);
+  const password = newNamespace.password;
   res.reply({
     namespace:  newNamespace.namespace,
-    username:   this.Namespaces.getRotationUsername(newNamespace),
-    password:   newNamespace.password,
+    connectionString: buildPulseConnectionString(username, password),
+    expires:    newNamespace.expires.toJSON(),
     contact:    newNamespace.contact,
   });
 });
@@ -111,13 +113,14 @@ api.declare({
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Get namespace information',
+  output:   'namespace-response.json',
   scopes:   [
     ['pulse:namespace:<namespace>'],
   ],
   //todo later: deferAuth: true,
   stability: 'experimental',
   description: [
-    'Gets a namespace, given the taskcluster credentials with scopes.',
+    'Gets the information of a namespace, given the taskcluster credentials with necessary scopes.',
   ].join('\n'),
 }, async function(req, res) {
   const {namespace} = req.params;
@@ -127,8 +130,15 @@ api.declare({
   }
 
   try {
-    const namespaceResponse = await this.Namespaces.load({namespace: namespace});
-    res.reply(namespaceResponse);
+    const namespaceInfo = await this.Namespaces.load({namespace: namespace});
+    const username = this.Namespaces.getRotationUsername(namespaceInfo);
+    const password = namespaceInfo.password;
+    res.reply({
+      namespace:  namespaceInfo.namespace,
+      connectionString: buildPulseConnectionString(username, password),
+      expires:    namespaceInfo.expires.toJSON(),
+      contact:    namespaceInfo.contact,
+    });
   } catch (error) {
     return res.status(404).json({
       message: `Could not find namespace ${namespace}`,
@@ -203,4 +213,23 @@ async function setNamespace(context, namespace, contact) {
     newNamespace = await context.Namespaces.load({namespace: namespace});
   }
   return newNamespace;
+}
+
+/**
+ * @param {string} username
+ * @param {string} password
+ * @returns {string} connectionString built from the provided username/password.
+ */
+function buildPulseConnectionString(username, password) {
+  // TODO put hostname, port, etc. in configuration.
+  return [
+    'amqps://',         // Ensure that we're using SSL
+    username,
+    ':',
+    password,
+    '@',
+    'pulse.mozilla.org',
+    ':',
+    5671,               // Port for SSL
+  ].join('');
 }
