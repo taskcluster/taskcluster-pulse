@@ -25,7 +25,7 @@ let Namespace = Entity.configure({
    * Contact object with properties
    * -method
    * -payload
-   * 
+   *
    * See JSON schema for documentation
    */
     contact:        Entity.types.JSON,
@@ -55,7 +55,7 @@ Namespace.expire = async function(now) {
 Namespace.rotate = async function(now, rabbit) {
   assert(now instanceof Date, 'now must be given as option');
   assert(rabbit instanceof RabbitManager, 'rabbit manager must be given as option');
-  
+
   let count = 0;
   await Entity.scan.call(this, {
     nextRotation:          Entity.op.lessThan(now),
@@ -67,8 +67,8 @@ Namespace.rotate = async function(now, rabbit) {
       let nextRotationState = ns.rotationState === '1' ? '2' : '1';
 
       //modify user in rabbitmq
-      //TODO: open issue to create editUser method for rabbitmq api
-      await rabbit.createUser(ns.username.concat('-').concat(nextRotationState), nextPass, ['taskcluster-pulse']);
+      await rabbit.createOrUpdateUser(ns.username.concat('-').concat(nextRotationState),
+                                      nextPass, ['taskcluster-pulse']);
 
       //modify ns in table
       await ns.modify((entity) => {

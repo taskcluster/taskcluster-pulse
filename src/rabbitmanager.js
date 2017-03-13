@@ -78,17 +78,18 @@ class RabbitManager {
   /**
    * Create a user. All parameters are mandatory.
    *
+   * @throws {Error}                    - Thrown when user already exists.
+   *
    * @param {string} name               - Username.
    * @param {string} password           - The plaintext password.
    * @param {Array.<string>} tags       - A list of tags for the user. "administrator",
-   *     "monitoring" and "management" have special meanings recognized by RabbitMQ.
+   *    "monitoring" and "management" have special meanings recognized by RabbitMQ.
    *     Other custom tags are also allowed. Tags cannot contain comma (',').
    */
-  async createUser(name, password, tags) {
+  async createOrUpdateUser(name, password, tags) {
     assert(name);
     assert(password);
     assert(tags instanceof Array);
-
     let payload = {
       password: password,
       tags: tags.join(),
@@ -113,9 +114,23 @@ class RabbitManager {
     });
   }
 
-  /** Get a list of all users. */
+ /**
+  * Get a list of all users.
+  *
+  * @returns {Promise.<Array.<Object>>} An array of users.
+  */
   async users() {
     return await this.request('users');
+  }
+
+  /**
+   * Get a user.
+   *
+   * @param {string} username
+   * @returns {Promise.<Object>} User info.
+   */
+  async user(username) {
+    return await this.request(`users/${username}`);
   }
 
   /**
