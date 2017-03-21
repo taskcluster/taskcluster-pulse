@@ -6,11 +6,8 @@ let taskcluster = require('taskcluster-client');
 let config      = require('typed-env-config');
 let testing     = require('taskcluster-lib-testing');
 let Stressor    = require('../.bin/rabbitstressor');
-let api         = require('../lib/api');
+let v1          = require('../lib/api');
 let load        = require('../lib/main');
-let Rabbit      = require('../lib/rabbitmanager');
-let Monitor     = require('../lib/rabbitmonitor');
-let Alerter     = require('../lib/rabbitalerter');
 let data        = require('../lib/data');
 
 // Load configuration
@@ -46,23 +43,18 @@ mocha.before(async () => {
 
   // Create client for working with API
   helper.baseUrl = 'http://localhost:' + webServer.address().port + '/v1';
-  let reference = api.reference({baseUrl: helper.baseUrl});
+  let reference = v1.reference({baseUrl: helper.baseUrl});
   helper.Pulse = taskcluster.createClient(reference);
   helper.pulse = new helper.Pulse({
     baseUrl: helper.baseUrl,
     credentials: cfg.taskcluster.credentials,
   });
 
-  helper.rabbit = await load('rabbit', overwrites);
+  helper.rabbit = await load('rabbitManager', overwrites);
+  helper.alerter = overwrites.rabbitAlerter = await load('rabbitAlerter', overwrites);
+  helper.monitor = overwrites.rabbitMonitor = await load('rabbitMonitor', overwrites);
+
   helper.stressor = new Stressor(cfg.stressor, cfg.app.amqpUrl, helper.rabbit);
-  helper.alerter = new Alerter(cfg.alerter, cfg.taskcluster.credentials);
-  helper.monitor = new Monitor(
-    cfg.monitor,
-    cfg.app.amqpUrl,
-    new Alerter(cfg.alerter, cfg.taskcluster.credentials),
-    helper.rabbit,
-    helper.pulse
-  );
 });
 
 mocha.after(async () => {
