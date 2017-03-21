@@ -132,48 +132,28 @@ suite('API', () => {
     });
   });
 
-  suite('namespace', function() {
-    test('returns a namespace', async () => {
-      const namespace = 'tcpulse-test-foobar';
-      const namespaceInfo = {
-        contact: {
-          method: 'irc',
-          payload: {channel: '#test'},
-        },
-      };
-      await helper.pulse.claimNamespace(namespace, namespaceInfo);
-      await helper.pulse.namespace(namespace);
-    });
+  suite('listNamespaces', function() {
+    test('returns namespaces', async () => {
+      // create a bunch of namespaces
+      await Promise.all(['foo', 'bar', 'bing', 'baz'].map(n => 
+        helper.pulse.claimNamespace(`tcpulse-test-${n}`, {
+          contact: {
+            method: 'irc',
+            payload: {channel: `#${n}`},
+          },
+        })));
 
-    test('namespaceNotFound', async () => {
-      const namespace = 'tcpulse-test-foobar';
-      try {
-        await helper.pulse.namespace(namespace);
-        assert(false, 'Should have thrown a 404 error.');
-      } catch (error) {
-        assert(error.statusCode === 404);
-      }
-    });
-
-    test('invalidNamespace', async () => {
-      const namespace = 'tcpulse-test-%';
-      try {
-        await helper.pulse.namespace(namespace);
-        assert(false, 'Should have thrown a 400 error.');
-      } catch (error) {
-        assert(error.statusCode === 400);
-      }
-    });
-
-    test('bad namespace prefix', async () => {
-      const namespace = 'you-cant-write-that-here';
-      try {
-        await helper.pulse.namespace(namespace);
-        assert(false, 'Should have thrown a 400 error.');
-      } catch (error) {
-        assert(error.statusCode === 400);
-      }
+      // check that continuation tokens work correctly by getting two batches of two
+      // and ensuring all four namespaces are represented (even thought he order is
+      // not deterministic)
+      let seen = new Set();
+      let res = await helper.pulse.listNamespaces({limit: 2});
+      assert.equal(res.namespaces.length, 2);
+      res.namespaces.forEach(ns => seen.add(ns.namespace));
+      res = await helper.pulse.listNamespaces({limit: 2, continuation: res.continuationToken});
+      assert.equal(res.namespaces.length, 2);
+      res.namespaces.forEach(ns => seen.add(ns.namespace));
+      assert.equal(seen.size, 4);
     });
   });
-
 });

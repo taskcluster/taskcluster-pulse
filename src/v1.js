@@ -67,7 +67,45 @@ api.declare({
   );
 });
 
-// TODO: api method to list namespaces
+api.declare({
+  method:         'get',
+  route:          '/namespaces',
+  name:           'listNamespaces',
+  stability:      API.stability.stable,
+  output:         'list-namespaces-response.json',
+  title:          'List Namespaces',
+  query: {
+    limit: /[0-9]+/,
+    continuation: /.*/,
+  },
+  description: [
+    'List the namespaces managed by this service.',
+    '',
+    'This will list up to 1000 namespaces. If more namespaces are present a',
+    '`continuationToken` will be returned, which can be given in the next',
+    'request. For the initial request, do not provide continuation.',
+  ].join('\n'),
+}, async function(req, res) {
+  var continuation = req.query.continuation;
+  var limit = req.query.limit ? parseInt(req.query.limit, 10) : 1000;
+  if (limit > 1000) {
+    limit = 1000;
+  }
+
+  var retval = {};
+  var data = await this.Namespaces.scan({}, {limit, continuation});
+
+  retval.namespaces = data.entries.map(ns => ({
+    namespace: ns.namespace,
+    contact: ns.contact,
+  }));
+
+  if (data.continuation) {
+    retval.continuationToken = data.continuation;
+  }
+
+  return res.reply(retval);
+});
 
 api.declare({
   method:   'post',
@@ -111,38 +149,6 @@ api.declare({
     // before that rotation occurs could result in being told to call
     // again immediately. Think carefully about which time is best.
   });
-});
-
-// TODO: remove this method; namespace details should be managed with the
-// method above
-api.declare({
-  method:   'get',
-  route:    '/namespace/:namespace',
-  name:     'namespace',
-  title:    'Get namespace information',
-  scopes:   [
-    ['pulse:namespace:<namespace>'],
-  ],
-  //todo later: deferAuth: true,
-  stability: 'experimental',
-  description: [
-    'Gets a namespace, given the taskcluster credentials with scopes.',
-  ].join('\n'),
-}, async function(req, res) {
-  const {namespace} = req.params;
-
-  if (!isNamespaceValid(namespace, this.cfg)) {
-    return invalidNamespaceResponse(req, res, this.cfg);
-  }
-
-  try {
-    const namespaceResponse = await this.Namespaces.load({namespace: namespace});
-    res.reply(namespaceResponse);
-  } catch (error) {
-    return res.reportError('ResourceNotFound',
-        `Could not find namespace ${namespace}`,
-        {});
-  }
 });
 
 /**
