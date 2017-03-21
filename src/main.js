@@ -1,5 +1,5 @@
 let debug             = require('debug')('taskcluster-pulse');
-let appsetup          = require('taskcluster-lib-app');
+let app               = require('taskcluster-lib-app');
 let loader            = require('taskcluster-lib-loader');
 let config            = require('typed-env-config');
 let monitor           = require('taskcluster-lib-monitor');
@@ -150,9 +150,9 @@ let load = loader({
     setup: ({cfg, api, docs}) => {
 
       debug('Launching server.');
-      let app = appsetup(cfg.server);
-      app.use('/v1', api);
-      return app.createServer();
+      let pulseApp = app(cfg.server);
+      pulseApp.use('/v1', api);
+      return pulseApp.createServer();
     },
   },
 
