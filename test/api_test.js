@@ -33,9 +33,9 @@ suite('API', () => {
     return helper.pulse.exchanges();
   }));
 
-  suite('createNamespace', function() {
+  suite('claimNamespace', function() {
     test('email', () => {
-      return helper.pulse.createNamespace('tcpulse-test-sample', {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -44,7 +44,7 @@ suite('API', () => {
     });
 
     test('irc(user)', () => {
-      return helper.pulse.createNamespace('tcpulse-test-sample', {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
         contact: {
           method: 'irc',
           payload: {user: 'test'},
@@ -53,7 +53,7 @@ suite('API', () => {
     });
 
     test('irc(channel)', () => {
-      return helper.pulse.createNamespace('tcpulse-test-sample', {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
         contact: {
           method: 'irc',
           payload: {channel: '#test'},
@@ -62,7 +62,7 @@ suite('API', () => {
     });
 
     test('char limit under', () => {
-      return helper.pulse.createNamespace('tcpulse-test-sampole', {
+      return helper.pulse.claimNamespace('tcpulse-test-sampole', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -72,7 +72,7 @@ suite('API', () => {
 
     test('char limit over', () => {
       const longname = 'tcpulse-test-samplenamespacesamplenamespacesamplenamespacesamplenamespace';
-      return helper.pulse.createNamespace(longname, {
+      return helper.pulse.claimNamespace(longname, {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -85,7 +85,7 @@ suite('API', () => {
     });
 
     test('char invalid symbols', () => {
-      return helper.pulse.createNamespace('tcpulse-test-%', {
+      return helper.pulse.claimNamespace('tcpulse-test-%', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -98,13 +98,13 @@ suite('API', () => {
     });
 
     test('idempotency - return same namespace', async () => {
-      let a = await helper.pulse.createNamespace('tcpulse-test-sample', {
+      let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
         },
       });
-      let b = await helper.pulse.createNamespace('tcpulse-test-sample', {
+      let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -115,7 +115,7 @@ suite('API', () => {
 
     test('entry creation', async () => {
       for (let i = 0; i < 10; i++) {
-        await helper.pulse.createNamespace('tcpulse-test-sample', {
+        await helper.pulse.claimNamespace('tcpulse-test-sample', {
           contact: {
             method: 'email',
             payload: {address: 'a@a.com'},
@@ -141,7 +141,7 @@ suite('API', () => {
           payload: {channel: '#test'},
         },
       };
-      await helper.pulse.createNamespace(namespace, namespaceInfo);
+      await helper.pulse.claimNamespace(namespace, namespaceInfo);
       await helper.pulse.namespace(namespace);
     });
 

@@ -72,8 +72,8 @@ api.declare({
 api.declare({
   method:   'post',
   route:    '/namespace/:namespace',
-  name:     'createNamespace', // TODO: name claimNamespace
-  title:    'Create a namespace',
+  name:     'claimNamespace',
+  title:    'Claim a namespace',
   input:    'namespace-request.json',
   output:   'namespace-response.json',
   scopes:   [
