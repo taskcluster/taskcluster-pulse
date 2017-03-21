@@ -71,7 +71,7 @@ let load = loader({
   api: {
     requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespaces'],
     setup: ({cfg, monitor, validator, rabbitManager, Namespaces}) => v1.setup({
-      context:          {rabbit: rabbitManager, Namespaces},
+      context:          {rabbitManager, Namespaces},
       authBaseUrl:      cfg.taskcluster.authBaseUrl,
       publish:          process.env.NODE_ENV === 'production',
       baseUrl:          cfg.server.publicUrl + '/v1',

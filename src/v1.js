@@ -17,8 +17,8 @@ let api = new API({
   ].join('\n'),
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [
-    'rabbit', // An instance of rabbitmanager
-    'Namespaces', //An instance of the namespace table manager
+    'rabbitManager',
+    'Namespaces',
   ],
   errorCodes: {
     InvalidNamespace: 400,
@@ -43,7 +43,7 @@ api.declare({
 }, async function(req, res) {
   res.reply(
     _.pick(
-      await this.rabbit.overview(),
+      await this.rabbitManager.overview(),
       ['rabbitmq_version', 'cluster_name', 'management_version']
     )
   );
@@ -65,7 +65,7 @@ api.declare({
 }, async function(req, res) {
   res.reply(
     _.map(
-      await this.rabbit.exchanges(),
+      await this.rabbitManager.exchanges(),
       elem => _.pick(elem, ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments'])
     )
   );
@@ -165,10 +165,10 @@ function isNamespaceValid(namespace) {
  * Attempt to create a new namespace entry and associated Rabbit user.
  * If the requested namespace exists, return it.
  */
-async function setNamespace(context, namespace, contact) {
+async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
   let newNamespace;
   try {
-    newNamespace = await context.Namespaces.create({
+    newNamespace = await Namespaces.create({
       namespace:  namespace,
       username:   namespace,
       password:   slugid.v4(),
@@ -179,11 +179,11 @@ async function setNamespace(context, namespace, contact) {
       contact:    contact,
     });
 
-    await context.rabbit.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
-    await context.rabbit.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
+    await rabbitManager.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
+    await rabbitManager.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
 
     //set up user pairs in rabbitmq, both users are used for auth rotations
-    await context.rabbit.setUserPermissions(
+    await rabbitManager.setUserPermissions(
       namespace.concat('-1'),                                         //username
       '/',                                                            //vhost
       `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
@@ -191,7 +191,7 @@ async function setNamespace(context, namespace, contact) {
       '^taskcluster/exchanges/.*'                                      //read pattern
       );
 
-    await context.rabbit.setUserPermissions(
+    await rabbitManager.setUserPermissions(
       namespace.concat('-2'),                                         //username
       '/',                                                            //vhost
       `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
@@ -203,7 +203,7 @@ async function setNamespace(context, namespace, contact) {
     if (err.code !== 'EntityAlreadyExists') {
       throw err;
     }
-    newNamespace = await context.Namespaces.load({namespace: namespace});
+    newNamespace = await Namespaces.load({namespace: namespace});
   }
   return newNamespace;
 }
