@@ -6,7 +6,7 @@ let taskcluster = require('taskcluster-client');
 let config      = require('typed-env-config');
 let testing     = require('taskcluster-lib-testing');
 let Stressor    = require('../.bin/rabbitstressor');
-let v1          = require('../lib/api');
+let v1          = require('../lib/v1');
 let load        = require('../lib/main');
 let data        = require('../lib/data');
 
