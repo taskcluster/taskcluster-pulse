@@ -12,8 +12,8 @@ let api = new API({
     'manages pulse credentials for taskcluster users.',
     '',
     'A service to manage Pulse credentials for anything using',
-    'Taskcluster credentials. This allows us self-service and',
-    'greater control within the Taskcluster project.',
+    'Taskcluster credentials. This allows for self-service pulse',
+    'access and greater control within the Taskcluster project.',
   ].join('\n'),
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [
@@ -27,9 +27,6 @@ let api = new API({
 
 module.exports = api;
 
-/**
- * Gets an overview of the rabbit cluster
- */
 api.declare({
   method:     'get',
   route:      '/overview',
@@ -38,7 +35,7 @@ api.declare({
   output:     'rabbit-overview.json',
   stability:  'experimental',
   description: [
-    'An overview of the Rabbit cluster',
+    'Get an overview of the Rabbit cluster.',
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
@@ -49,9 +46,6 @@ api.declare({
   );
 });
 
-/**
- * Gets the list of exchanges in the rabbit cluster
- */
 api.declare({
   method:     'get',
   route:      '/exchanges',
@@ -60,7 +54,8 @@ api.declare({
   output:     'exchanges-response.json',
   stability:  'experimental',
   description: [
-    'A list of exchanges in the rabbit cluster',
+    'Get a list of all exchanges in the rabbit cluster.  This will include exchanges',
+    'not managed by this service, if any exist.',
   ].join('\n'),
 }, async function(req, res) {
   res.reply(
@@ -71,27 +66,34 @@ api.declare({
   );
 });
 
-/**
- * Gets the namespace, creates one if one doesn't exist
- */
+// TODO: api method to list namespaces
+
 api.declare({
   method:   'post',
   route:    '/namespace/:namespace',
-  name:     'createNamespace',
+  name:     'createNamespace', // TODO: name claimNamespace
   title:    'Create a namespace',
   input:    'namespace-request.json',
   output:   'namespace-response.json',
   scopes:   [
     ['pulse:namespace:<namespace>'],
   ],
-  //todo later: deferAuth: true,
   stability: 'experimental',
   description: [
-    'Creates a namespace, given the taskcluster credentials with scopes.',
+    'Claim a namespace, returning a username and password with access to that',
+    'namespace good for a short time.  Clients should call this endpoint again',
+    'at the re-claim time given in the response, as the password will be rotated',
+    'soon after that time.  The namespace will expire, and any associated queues',
+    'and exchanges will be deleted, at the given expiration time',
   ].join('\n'),
 }, async function(req, res) {
   let {namespace} = req.params;
   let contact = req.body.contact; //the contact information
+
+  // TODO: verify user has scopes for the given contact information
+  // (requires deferAuth: true)
+
+  // TODO: allow user to specify expiration time
 
   if (!isNamespaceValid(namespace)) {
     return invalidNamespaceResponse(req, res);
@@ -103,12 +105,15 @@ api.declare({
     username:   this.Namespaces.getRotationUsername(newNamespace),
     password:   newNamespace.password,
     contact:    newNamespace.contact,
+    // TODO: return expiration, re-claim time
+    // note: returned re-claim time is not nextRotation, as calling
+    // before that rotation occurs could result in being told to call
+    // again immediately. Think carefully about which time is best.
   });
 });
 
-/**
- * Gets namespace details
- */
+// TODO: remove this method; namespace details should be managed with the
+// method above
 api.declare({
   method:   'get',
   route:    '/namespace/:namespace',
@@ -173,6 +178,7 @@ async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
       username:   namespace,
       password:   slugid.v4(),
       created:    new Date(),
+      // TODO: make these times configurable
       expires:    taskcluster.fromNow('1 day'),
       rotationState:  '1',
       nextRotation: taskcluster.fromNow('1 hour'),
@@ -183,6 +189,7 @@ async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
     await rabbitManager.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
 
     //set up user pairs in rabbitmq, both users are used for auth rotations
+    // TODO: make these configurable too
     await rabbitManager.setUserPermissions(
       namespace.concat('-1'),                                         //username
       '/',                                                            //vhost
@@ -203,6 +210,9 @@ async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
     if (err.code !== 'EntityAlreadyExists') {
       throw err;
     }
+
+    // TODO: verify settings are the same, or modify existing settings
+
     newNamespace = await Namespaces.load({namespace: namespace});
   }
   return newNamespace;
