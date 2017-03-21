@@ -17,6 +17,7 @@ let api = new API({
   ].join('\n'),
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [
+    'cfg',
     'rabbitManager',
     'Namespaces',
   ],
@@ -95,8 +96,8 @@ api.declare({
 
   // TODO: allow user to specify expiration time
 
-  if (!isNamespaceValid(namespace)) {
-    return invalidNamespaceResponse(req, res);
+  if (!isNamespaceValid(namespace, this.cfg)) {
+    return invalidNamespaceResponse(req, res, this.cfg);
   }
 
   let newNamespace = await setNamespace(this, namespace, contact);
@@ -130,8 +131,8 @@ api.declare({
 }, async function(req, res) {
   const {namespace} = req.params;
 
-  if (!isNamespaceValid(namespace)) {
-    return invalidNamespaceResponse(req, res);
+  if (!isNamespaceValid(namespace, this.cfg)) {
+    return invalidNamespaceResponse(req, res, this.cfg);
   }
 
   try {
@@ -145,25 +146,31 @@ api.declare({
 });
 
 /**
- * @param {Object} request      - An HTTP request object.
- * @param {Object} response     - An HTTP response object.
- * @returns {Object} A 400 error indicating that the namespace was invalid.
+ * Report an InvalidNamspeace error to the user
  */
-function invalidNamespaceResponse(request, response) {
-  return response.reportError('InvalidNamespace', [
-    'Namespace provided must be at most 64 bytes, and contain only these characters: ',
-    '[A-Za-z-0-9_:-]',
-  ].join('\n'), {
-    namespace:  request.params.namespace,
-  });
+function invalidNamespaceResponse(request, response, cfg) {
+  let msg = ['Invalid namespace provided.  Namespaces must:'];
+  msg.push('* be at most 64 bytes');
+  msg.push('* contain only [A-Za-z-0-9_:-]');
+  if (cfg.app.namespacePrefix) {
+    msg.push(`* begin with "${cfg.app.namespacePrefix}"`);
+  }
+  return response.reportError('InvalidNamespace', msg.join('\n'), {});
 }
 
 /**
- * @param {string} namespace
- * @returns {Boolean} True if namespace is valid.
+ * Check whether this is a valid namespace name, considering both hard-coded
+ * limits and the configurable required prefix
  */
-function isNamespaceValid(namespace) {
-  return namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace);
+function isNamespaceValid(namespace, cfg) {
+  if (namespace.length > 64 || !/^[A-Za-z0-9_-]+$/.test(namespace)) {
+    return false;
+  }
+  const prefix = cfg.app.namespacePrefix;
+  if (prefix && !namespace.startsWith(prefix)) {
+    return false;
+  }
+  return true;
 }
 
 /*

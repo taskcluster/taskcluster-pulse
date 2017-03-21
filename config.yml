@@ -5,6 +5,12 @@ defaults:
     exchangePrefix: v1/
     namespaceTableName: 'PulseNamespaces'
     namespacesExpirationDelay: '- 1 hour'
+    # If given, all namespaces must begin with this string; and only
+    # matching queues and exchanges will be monitored.  Use this to
+    # allow taskcluster-pulse to "share" a rabbitmq server with other
+    # users.
+    namespacePrefix: !env NAMESPACE_PREFIX
+    # TODO: add virtualHost too
     amqpUrl: !env TASKCLUSTER_AMQP_URL
 
   aws:
@@ -41,7 +47,6 @@ defaults:
 
   monitor:
     refreshInterval:              !env MONITOR_REFRESH_INTERVAL
-    queuePrefix:                  !env MONITOR_QUEUE_PREFIX
 
   alerter:
     messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE
@@ -56,6 +61,7 @@ production:
 test:
   app:
     amqpUrl: 'amqp://localhost'
+    namespacePrefix: 'tcpulse-test-'
 
   taskcluster:
     credentials:

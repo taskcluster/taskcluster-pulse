@@ -71,7 +71,7 @@ let load = loader({
   api: {
     requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespaces'],
     setup: ({cfg, monitor, validator, rabbitManager, Namespaces}) => v1.setup({
-      context:          {rabbitManager, Namespaces},
+      context:          {cfg, rabbitManager, Namespaces},
       authBaseUrl:      cfg.taskcluster.authBaseUrl,
       publish:          process.env.NODE_ENV === 'production',
       baseUrl:          cfg.server.publicUrl + '/v1',
@@ -103,7 +103,8 @@ let load = loader({
       });
 
       return new RabbitMonitor(
-        cfg.monitor,
+        cfg.monitor.refreshInterval,
+        cfg.app.namespacePrefix,
         cfg.app.amqpUrl,
         rabbitAlerter,
         rabbitManager,

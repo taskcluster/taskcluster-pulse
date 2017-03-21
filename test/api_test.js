@@ -34,7 +34,7 @@ suite('API', () => {
   }));
 
   test('namespace - email', () => {
-    return helper.pulse.createNamespace('samplenamespace', {
+    return helper.pulse.createNamespace('tcpulse-test-sample', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -43,7 +43,7 @@ suite('API', () => {
   });
 
   test('namespace - irc(user)', () => {
-    return helper.pulse.createNamespace('samplenamespace', {
+    return helper.pulse.createNamespace('tcpulse-test-sample', {
       contact: {
         method: 'irc',
         payload: {user: 'test'},
@@ -52,7 +52,7 @@ suite('API', () => {
   });
 
   test('namespace - irc(channel)', () => {
-    return helper.pulse.createNamespace('samplenamespace', {
+    return helper.pulse.createNamespace('tcpulse-test-sample', {
       contact: {
         method: 'irc',
         payload: {channel: '#test'},
@@ -61,7 +61,7 @@ suite('API', () => {
   });
 
   test('namespace', async () => {
-    const namespace = 'foobar';
+    const namespace = 'tcpulse-test-foobar';
     const namespaceInfo = {
       contact: {
         method: 'irc',
@@ -73,7 +73,7 @@ suite('API', () => {
   });
 
   test('namespaceNotFound', async () => {
-    const namespace = 'foobar';
+    const namespace = 'tcpulse-test-foobar';
     try {
       await helper.pulse.namespace(namespace);
       assert(false, 'Should have thrown a 404 error.');
@@ -83,7 +83,17 @@ suite('API', () => {
   });
 
   test('invalidNamespace', async () => {
-    const namespace = 'sample%namespace';
+    const namespace = 'tcpulse-test-%';
+    try {
+      await helper.pulse.namespace(namespace);
+      assert(false, 'Should have thrown a 400 error.');
+    } catch (error) {
+      assert(error.statusCode === 400);
+    }
+  });
+
+  test('bad namespace prefix', async () => {
+    const namespace = 'you-cant-write-that-here';
     try {
       await helper.pulse.namespace(namespace);
       assert(false, 'Should have thrown a 400 error.');
@@ -93,7 +103,7 @@ suite('API', () => {
   });
 
   test('createNamespace - char limit under', () => {
-    return helper.pulse.createNamespace('samplenamespace', {
+    return helper.pulse.createNamespace('tcpulse-test-sampole', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -102,7 +112,7 @@ suite('API', () => {
   });
 
   test('createNamespace - char limit over', () => {
-    return helper.pulse.createNamespace('samplenamespacesamplenamespacesamplenamespacesamplenamespacesamplenamespace', {
+    return helper.pulse.createNamespace('tcpulse-test-samplenamespacesamplenamespacesamplenamespacesamplenamespace', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -115,7 +125,7 @@ suite('API', () => {
   });
 
   test('createNamespace - char invalid symbols', () => {
-    return helper.pulse.createNamespace('sample%namespace', {
+    return helper.pulse.createNamespace('tcpulse-test-%', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -247,13 +257,13 @@ suite('API', () => {
   });
 
   test('"namespace" idempotency - return same namespace', async () => {
-    let a = await helper.pulse.createNamespace('testname', {
+    let a = await helper.pulse.createNamespace('tcpulse-test-sample', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
       },
     });
-    let b = await helper.pulse.createNamespace('testname', {
+    let b = await helper.pulse.createNamespace('tcpulse-test-sample', {
       contact: {
         method: 'email',
         payload: {address: 'a@a.com'},
@@ -264,7 +274,7 @@ suite('API', () => {
 
   test('"namespace" idempotency - entry creation', async () => {
     for (let i = 0; i < 10; i++) {
-      await helper.pulse.createNamespace('testname', {
+      await helper.pulse.createNamespace('tcpulse-test-sample', {
         contact: {
           method: 'email',
           payload: {address: 'a@a.com'},
@@ -304,8 +314,8 @@ suite('API', () => {
       var old_pass = slugid.v4();
 
       await namespaces.create({
-        namespace: 'testname',
-        username: 'testname',
+        namespace: 'tcpulse-test-sample',
+        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -316,7 +326,7 @@ suite('API', () => {
 
       await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
 
-      var ns = await namespaces.load({namespace: 'testname'});
+      var ns = await namespaces.load({namespace: 'tcpulse-test-sample'});
       assert(ns, 'namespace should exist');
       assert(ns.rotationState==='2', 'namespace should have rotated state');
       assert(ns.password !== old_pass, 'rotated namespace should have new password');
@@ -327,8 +337,8 @@ suite('API', () => {
       var old_pass = slugid.v4();
 
       await namespaces.create({
-        namespace: 'testname1',
-        username: 'testname',
+        namespace: 'tcpulse-test-sample1',
+        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -338,8 +348,8 @@ suite('API', () => {
       });
 
       await namespaces.create({
-        namespace: 'testname2',
-        username: 'testname',
+        namespace: 'tcpulse-test-sample2',
+        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -350,15 +360,15 @@ suite('API', () => {
 
       await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
 
-      var ns1 = await namespaces.load({namespace: 'testname1'});
-      var ns2 = await namespaces.load({namespace: 'testname2'});
+      var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
+      var ns2 = await namespaces.load({namespace: 'tcpulse-test-sample2'});
 
       assert(ns1 && ns2, 'namespaces should exist');
-      assert(ns1.rotationState==='2', 'testname1 should have rotated state');
-      assert(ns1.password !== old_pass, 'rotated testname1 should have new password');
+      assert(ns1.rotationState==='2', 'tcpulse-test-sample1 should have rotated state');
+      assert(ns1.password !== old_pass, 'rotated tcpulse-test-sample1 should have new password');
 
-      assert(ns2.rotationState==='1', 'testname2 should have rotated state');
-      assert(ns2.password !== old_pass, 'rotated testname2 should have new password');
+      assert(ns2.rotationState==='1', 'tcpulse-test-sample2 should have rotated state');
+      assert(ns2.password !== old_pass, 'rotated tcpulse-test-sample2 should have new password');
 
     });
 
@@ -366,8 +376,8 @@ suite('API', () => {
       var old_pass = slugid.v4();
 
       await namespaces.create({
-        namespace: 'testname1',
-        username: 'testname',
+        namespace: 'tcpulse-test-sample1',
+        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -377,8 +387,8 @@ suite('API', () => {
       });
 
       await namespaces.create({
-        namespace: 'testname2',
-        username: 'testname',
+        namespace: 'tcpulse-test-sample2',
+        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -389,15 +399,15 @@ suite('API', () => {
 
       await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
 
-      var ns1 = await namespaces.load({namespace: 'testname1'});
-      var ns2 = await namespaces.load({namespace: 'testname2'});
+      var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
+      var ns2 = await namespaces.load({namespace: 'tcpulse-test-sample2'});
 
       assert(ns1 && ns2, 'namespaces should exist');
-      assert(ns1.rotationState==='2', 'testname1 should have rotated state');
-      assert(ns1.password !== old_pass, 'rotated testname1 should have new password');
+      assert(ns1.rotationState==='2', 'tcpulse-test-sample1 should have rotated state');
+      assert(ns1.password !== old_pass, 'rotated tcpulse-test-sample1 should have new password');
 
-      assert(ns2.rotationState ==='2', 'testname2 should have same rotation state');
-      assert(ns2.password === old_pass, 'testname2 should have same password');
+      assert(ns2.rotationState ==='2', 'tcpulse-test-sample2 should have same rotation state');
+      assert(ns2.password === old_pass, 'tcpulse-test-sample2 should have same password');
     });
   });
 });

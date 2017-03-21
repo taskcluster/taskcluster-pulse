@@ -22,9 +22,9 @@ class RabbitMonitor {
    * @param {RabbitManager} rabbitManager           - RabbitMQ client.
    * @param {TaskClusterClient} pulse               - TaskCluster Pulse client.
    */
-  constructor({refreshInterval, queuePrefix}, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
+  constructor(refreshInterval, namespacePrefix, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
-    assert(queuePrefix, 'Must provide a prefix for the taskcluster queue names!');
+    assert(namespacePrefix, 'Must provide a prefix for the taskcluster queue names!');
     assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
@@ -34,7 +34,7 @@ class RabbitMonitor {
     this.rabbitManager = rabbitManager;
     this.rabbitAlerter = rabbitAlerter;
     this.pulse = pulse;
-    this.queuePrefix = queuePrefix;
+    this.queuePrefix = '/queue/' + namespacePrefix;
   }
 
   /**

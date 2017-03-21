@@ -6,10 +6,10 @@ suite('Rabbit Monitor', function() {
   const load = require('../lib/main');
   const RabbitMonitor = require('../lib/rabbitmonitor');
 
-  const namespaceOne = 'one';
-  const namespaceTwo = 'two';
-  const taskClusterQueueOne = 'taskcluster/one';
-  const taskClusterQueueTwo = 'taskcluster/two';
+  const namespaceOne = 'tcpulse-test-one';
+  const namespaceTwo = 'tcpulse-test-two';
+  const taskClusterQueueOne = 'taskcluster/tcpulse-test-one';
+  const taskClusterQueueTwo = 'taskcluster/tcpulse-test-two';
 
   // TODO: rabbit monitor doesn't really work yet..
   this.pending = true;

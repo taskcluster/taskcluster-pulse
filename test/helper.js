@@ -1,14 +1,14 @@
-let assert      = require('assert');
-let path        = require('path');
-let _           = require('lodash');
-let mocha       = require('mocha');
+let assert = require('assert');
+let path = require('path');
+let _ = require('lodash');
+let mocha = require('mocha');
 let taskcluster = require('taskcluster-client');
-let config      = require('typed-env-config');
-let testing     = require('taskcluster-lib-testing');
-let Stressor    = require('../.bin/rabbitstressor');
-let v1          = require('../lib/v1');
-let load        = require('../lib/main');
-let data        = require('../lib/data');
+let config = require('typed-env-config');
+let testing = require('taskcluster-lib-testing');
+let RabbitStressor = require('../.bin/rabbitstressor');
+let v1 = require('../lib/v1');
+let load = require('../lib/main');
+let data = require('../lib/data');
 
 // Load configuration
 let cfg = config({profile: 'test'});
@@ -54,7 +54,7 @@ mocha.before(async () => {
   helper.alerter = overwrites.rabbitAlerter = await load('rabbitAlerter', overwrites);
   helper.monitor = overwrites.rabbitMonitor = await load('rabbitMonitor', overwrites);
 
-  helper.stressor = new Stressor(cfg.stressor, cfg.app.amqpUrl, helper.rabbit);
+  helper.stressor = new RabbitStressor(cfg.stressor, cfg.app.amqpUrl, helper.rabbit);
 });
 
 mocha.after(async () => {
