@@ -22,9 +22,9 @@ class RabbitMonitor {
    * @param {RabbitManager} rabbitManager           - RabbitMQ client.
    * @param {TaskClusterClient} pulse               - TaskCluster Pulse client.
    */
-  constructor({refreshInterval, queuePrefix}, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
+  constructor(refreshInterval, namespacePrefix, amqpUrl, rabbitAlerter, rabbitManager, pulse) {
     assert(refreshInterval, 'Must provide an interval to monitor the queues!');
-    assert(queuePrefix, 'Must provide a prefix for the taskcluster queue names!');
+    assert(namespacePrefix, 'Must provide a prefix for the taskcluster queue names!');
     assert(amqpUrl, 'Must provide an AMQP URL!');
     assert(rabbitAlerter, 'Must provide a rabbit alerter!');
     assert(rabbitManager, 'Must provide a rabbit manager!');
@@ -34,7 +34,7 @@ class RabbitMonitor {
     this.rabbitManager = rabbitManager;
     this.rabbitAlerter = rabbitAlerter;
     this.pulse = pulse;
-    this.queuePrefix = queuePrefix;
+    this.queuePrefix = '/queue/' + namespacePrefix;
   }
 
   /**
@@ -42,6 +42,9 @@ class RabbitMonitor {
    *  @param {boolean} verbose   - Enable to log queue statistics in real time
    */
   async run(verbose=false) {
+    // TODO: finish RabbitMonitor
+    throw new Error('rabbitmonitor isn\'t working yet');
+
     const queueNames = await this.findTaskClusterQueues();
     if (queueNames.length > 0) {
       await this.monitorQueues(queueNames, verbose);
@@ -103,9 +106,13 @@ class RabbitMonitor {
    * @returns {Array.<Object>}          - An array of stats from each queue
    *                                      once all promises have been resolved.
    */
-  async collectStats(queueNames) {
-    const queues = await Promise.all(queueNames.map(async queueName => await this.rabbitManager.queue(queueName)));
-    return queues.map(queue => new RabbitMonitor.Stats(queue.name, queue.messages, queue.messages_details.rate));
+  collectStats(queueNames) {
+    return Promise.all(queueNames.map(async queueName => {
+      const queue = await this.rabbitManager.queue(queueName);
+      console.log(JSON.stringify(queue, null, 2));
+      // TODO: wtf is messages_details?
+      return new RabbitMonitor.Stats(queue.name, queue.messages, queue.messages_details.rate);
+    }));
   }
 
   /**

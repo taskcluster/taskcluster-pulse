@@ -1,14 +1,17 @@
 let debug             = require('debug')('taskcluster-pulse');
-let appsetup          = require('taskcluster-lib-app');
+let app               = require('taskcluster-lib-app');
 let loader            = require('taskcluster-lib-loader');
 let config            = require('typed-env-config');
 let monitor           = require('taskcluster-lib-monitor');
 let validator         = require('taskcluster-lib-validate');
 let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
-let v1                = require('./api');
-let Rabbit            = require('./rabbitmanager');
+let v1                = require('./v1');
+let taskcluster       = require('taskcluster-client');
 let data              = require('./data');
+let RabbitAlerter     = require('./rabbitalerter');
+let RabbitManager     = require('./rabbitmanager');
+let RabbitMonitor     = require('./rabbitmonitor');
 
 // Create component loader
 let load = loader({
@@ -50,11 +53,6 @@ let load = loader({
     }),
   },
 
-  rabbit: {
-    requires: ['cfg'],
-    setup: ({cfg}) => new Rabbit(cfg.rabbit),
-  },
-
   Namespaces: {
     requires: ['cfg', 'monitor'],
     setup: async ({cfg, monitor}) => {
@@ -67,6 +65,50 @@ let load = loader({
 
       await ns.ensureTable(); //create the table
       return ns;
+    },
+  },
+
+  api: {
+    requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespaces'],
+    setup: ({cfg, monitor, validator, rabbitManager, Namespaces}) => v1.setup({
+      context:          {cfg, rabbitManager, Namespaces},
+      authBaseUrl:      cfg.taskcluster.authBaseUrl,
+      publish:          process.env.NODE_ENV === 'production',
+      baseUrl:          cfg.server.publicUrl + '/v1',
+      referencePrefix:  'pulse/v1/api.json',
+      aws:              cfg.aws,
+      monitor:          monitor.prefix('api'),
+      validator,
+    }),
+  },
+
+  rabbitAlerter: {
+    requires: ['cfg'],
+    setup: ({cfg}) => new RabbitAlerter(cfg.alerter, cfg.taskcluster.credentials),
+  },
+
+  rabbitManager: {
+    requires: ['cfg'],
+    setup: ({cfg}) => new RabbitManager(cfg.rabbit),
+  },
+
+  rabbitMonitor: {
+    requires: ['cfg', 'rabbitAlerter', 'rabbitManager'],
+    setup: ({cfg, rabbitAlerter, rabbitManager}) => {
+      // create an API client for the tc-pulse web service
+      const reference = v1.reference({baseUrl: cfg.server.publicUrl + '/v1'});
+      const Pulse = taskcluster.createClient(reference);
+      const pulseClient = new Pulse({
+        credentials: cfg.taskcluster.credentials,
+      });
+
+      return new RabbitMonitor(
+        cfg.monitor.refreshInterval,
+        cfg.app.namespacePrefix,
+        cfg.app.amqpUrl,
+        rabbitAlerter,
+        rabbitManager,
+        pulseClient);
     },
   },
 
@@ -88,14 +130,14 @@ let load = loader({
   },
 
   'rotate-namespaces':{
-    requires: ['cfg', 'Namespaces', 'monitor', 'rabbit'],
-    setup: async ({cfg, Namespaces, monitor, rabbit}) => {
+    requires: ['cfg', 'Namespaces', 'monitor', 'rabbitManager'],
+    setup: async ({cfg, Namespaces, monitor, rabbitManager}) => {
       let now = taskcluster.fromNow(cfg.app.namespacesRotationDelay);
       assert(!_.isNaN(now), 'Can\'t have NaN as now');
 
       // rotate namespace username entries using delay
       debug('Rotating namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespaces.rotate(now, rabbit);
+      let count = await Namespaces.rotate(now, rabbitManager);
       debug('Rotating %s namespace entries', count);
 
       monitor.count('rotate-namespaces.done');
@@ -104,31 +146,21 @@ let load = loader({
     },
   },
 
-  api: {
-    requires: ['cfg', 'monitor', 'validator', 'rabbit', 'Namespaces'],
-    setup: ({cfg, monitor, validator, rabbit, Namespaces}) => v1.setup({
-      context:          {rabbit, Namespaces},
-      authBaseUrl:      cfg.taskcluster.authBaseUrl,
-      publish:          process.env.NODE_ENV === 'production',
-      baseUrl:          cfg.server.publicUrl + '/v1',
-      referencePrefix:  'pulse/v1/api.json',
-      aws:              cfg.aws,
-      monitor:          monitor.prefix('api'),
-      validator,
-    }),
-  },
-
   server: {
     requires: ['cfg', 'api', 'docs'],
     setup: ({cfg, api, docs}) => {
 
       debug('Launching server.');
-      let app = appsetup(cfg.server);
-      app.use('/v1', api);
-      return app.createServer();
+      let pulseApp = app(cfg.server);
+      pulseApp.use('/v1', api);
+      return pulseApp.createServer();
     },
   },
 
+  'run-monitor': {
+    requires: ['rabbitMonitor'],
+    setup: ({rabbitMonitor}) => rabbitMonitor.run(true),
+  },
 }, ['profile', 'process']);
 
 // If this file is executed launch component from first argument

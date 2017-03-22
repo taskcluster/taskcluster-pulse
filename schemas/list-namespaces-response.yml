@@ -1,0 +1,44 @@
+$schema:  http://json-schema.org/draft-04/schema#
+title:              "List Namespaces Response"
+description: |
+  Response from a request to list namespaces
+type:               object
+properties:
+  namespaces:
+    title:          "Namespaces"
+    description: |
+      List of namespaces.
+    type:           array
+    items:
+      title:        "Namespace"
+      description: |
+        Representation of the namespace
+      type:         object
+      properties:
+        namespace:
+          title:          "Name"
+          type:           string
+          description: |
+            The namespace's name
+        contact:
+          type:           object
+          title:          Contact Information
+          description:    The contact information which will be handed off to the notification service  
+          oneOf:
+                          - {$ref: 'http://schemas.taskcluster.net/pulse/v1/irc-request.json#'}
+                          - {$ref: 'http://schemas.taskcluster.net/pulse/v1/email-request.json#'}
+      additionalProperties: false
+      required:
+        - namespace
+        - contact
+  continuationToken:
+    title:                "Continuation Token"
+    type:                 string
+    description: |
+      A continuation token is returned if there are more results than listed
+      here. You can optionally provide the token as a query parameter to load
+      the additional results.
+additionalProperties: false
+required:
+  - namespaces
+
