@@ -159,7 +159,8 @@ suite('RabbitManager', function() {
 
     assert(queues instanceof Array);
     assert(queues.length > 0);
-    // TODO: the rabbit server doesn't return these keys, it seems
+    // TODO: the rabbit server doesn't return these keys for brand-new queues; consumers
+    // of this API will need to be careful to handle that possibility
     // assert(_.has(queues[0], 'memory')); -- it doesn't have this..
     // assert(_.has(queues[0], 'messages')); -- it doesn't have this..
     // assert(_.has(queues[0], 'messages_details')); -- it doesn't have this..
