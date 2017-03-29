@@ -67,7 +67,6 @@ Namespace.rotate = async function(now, rabbit) {
       let nextRotationState = ns.rotationState === '1' ? '2' : '1';
 
       //modify user in rabbitmq
-      //TODO: open issue to create editUser method for rabbitmq api
       await rabbit.createUser(ns.username.concat('-').concat(nextRotationState), nextPass, ['taskcluster-pulse']);
 
       //modify ns in table

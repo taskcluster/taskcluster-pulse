@@ -78,6 +78,10 @@ class RabbitManager {
   /**
    * Create a user. All parameters are mandatory.
    *
+   * Note that the RabbitMQ API does not distinguish creating a user from updating
+   * a user.  If the username is already defined, it will be updated with the given
+   * password and tags.
+   *
    * @param {string} name               - Username.
    * @param {string} password           - The plaintext password.
    * @param {Array.<string>} tags       - A list of tags for the user. "administrator",
