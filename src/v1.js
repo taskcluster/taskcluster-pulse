@@ -132,8 +132,10 @@ api.declare({
 }, async function(req, res) {
   let {namespace} = req.params;
 
-  // TODO: verify user has scopes for the given contact information
-  // (requires deferAuth: true)
+  // NOTE: at the moment we do not confirm that the user has permission to send
+  // the given notification.  The possibility of abuse is remote (and would
+  // involve abusing pulse), but we can solve this problem if and when we have
+  // it.
 
   if (!isNamespaceValid(namespace, this.cfg)) {
     return invalidNamespaceResponse(req, res, this.cfg);
