@@ -97,6 +97,7 @@ api.declare({
 
   retval.namespaces = data.entries.map(ns => ({
     namespace: ns.namespace,
+    created: ns.created.toJSON(),
     contact: ns.contact,
   }));
 

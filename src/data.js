@@ -37,6 +37,7 @@ Namespace.prototype.json = function() {
     namespace: this.namespace,
     username: Namespace.getRotationUsername(this),
     password: this.password,
+    created: this.created.toJSON(),
     expires: this.expires.toJSON(),
     contact: this.contact,
   };
