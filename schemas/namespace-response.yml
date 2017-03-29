@@ -16,6 +16,12 @@ properties:
     type:           string
     title:          Password
     description:    The password created for authentication
+  expires:
+    description: |
+      Date-time after which the username, and all associated queues and
+      exchanges, should be deleted.
+    type:       string
+    format:     date-time
   contact:
     type:           object
     title:          Contact Information

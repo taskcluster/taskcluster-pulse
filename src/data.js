@@ -32,6 +32,16 @@ let Namespace = Entity.configure({
   },
 });
 
+Namespace.prototype.json = function() {
+  return {
+    namespace: this.namespace,
+    username: Namespace.getRotationUsername(this),
+    password: this.password,
+    expires: this.expires.toJSON(),
+    contact: this.contact,
+  };
+};
+
 Namespace.getRotationUsername = function(ns) {
   assert(ns instanceof Namespace, 'ns must be a namespace');
   return ns.username.concat('-').concat(ns.rotationState);

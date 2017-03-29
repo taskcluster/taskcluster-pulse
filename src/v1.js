@@ -123,7 +123,7 @@ api.declare({
     'namespace good for a short time.  Clients should call this endpoint again',
     'at the re-claim time given in the response, as the password will be rotated',
     'soon after that time.  The namespace will expire, and any associated queues',
-    'and exchanges will be deleted, at the given expiration time',
+    'and exchanges will be deleted, at the given expiration time.',
   ].join('\n'),
 }, async function(req, res) {
   let {namespace} = req.params;
@@ -139,16 +139,8 @@ api.declare({
   }
 
   let newNamespace = await setNamespace(this, namespace, contact);
-  res.reply({
-    namespace:  newNamespace.namespace,
-    username:   this.Namespaces.getRotationUsername(newNamespace),
-    password:   newNamespace.password,
-    contact:    newNamespace.contact,
-    // TODO: return expiration, re-claim time
-    // note: returned re-claim time is not nextRotation, as calling
-    // before that rotation occurs could result in being told to call
-    // again immediately. Think carefully about which time is best.
-  });
+  res.reply(newNamespace.json());
+  // TODO: return re-claim time
 });
 
 /**
