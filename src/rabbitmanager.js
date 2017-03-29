@@ -230,7 +230,12 @@ class RabbitManager {
     await this.request(`permissions/${vhost}/${user}`, {method: 'delete'});
   }
 
-  /** Get a list of all queues. */
+  /** Get a list of all queues.
+   *
+   * This provides information directly from the RabbitMQ API - see
+   * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
+   * Note that the stats may not be available for newly-created queues.
+   */
   async queues() {
     return await this.request('queues');
   }
