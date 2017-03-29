@@ -124,21 +124,24 @@ api.declare({
     'at the re-claim time given in the response, as the password will be rotated',
     'soon after that time.  The namespace will expire, and any associated queues',
     'and exchanges will be deleted, at the given expiration time.',
+    '',
+    'The `expires` and `contact` properties can be updated at any time in a reclaim',
+    'operation.',
   ].join('\n'),
 }, async function(req, res) {
   let {namespace} = req.params;
-  let contact = req.body.contact; //the contact information
 
   // TODO: verify user has scopes for the given contact information
   // (requires deferAuth: true)
-
-  // TODO: allow user to specify expiration time
 
   if (!isNamespaceValid(namespace, this.cfg)) {
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await setNamespace(this, namespace, contact);
+  let newNamespace = await setNamespace(this, namespace, {
+    contact: req.body.contact,
+    expires: new Date(req.body.expires),
+  });
   res.reply(newNamespace.json());
   // TODO: return re-claim time
 });
@@ -173,9 +176,10 @@ function isNamespaceValid(namespace, cfg) {
 
 /*
  * Attempt to create a new namespace entry and associated Rabbit user.
- * If the requested namespace exists, return it.
+ * If the requested namespace exists, update it with any user-supplied settnigs,
+ * and return it.
  */
-async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
+async function setNamespace({rabbitManager, Namespaces}, namespace, {contact, expires}) {
   let newNamespace;
   try {
     newNamespace = await Namespaces.create({
@@ -183,8 +187,7 @@ async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
       username:   namespace,
       password:   slugid.v4(),
       created:    new Date(),
-      // TODO: make these times configurable
-      expires:    taskcluster.fromNow('1 day'),
+      expires:    expires,
       rotationState:  '1',
       nextRotation: taskcluster.fromNow('1 hour'),
       contact:    contact,
@@ -216,9 +219,21 @@ async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
       throw err;
     }
 
-    // TODO: verify settings are the same, or modify existing settings
-
+    // get the existing row
     newNamespace = await Namespaces.load({namespace: namespace});
+
+    // If this claim contains different information, update it accordingly
+    if (!_.isEqual(
+      {expires: newNamespace.expires, contact: newNamespace.contact},
+      {expires, contact})) {
+      await newNamespace.modify(entity => {
+        entity.expires = expires;
+        entity.contact = contact;
+      });
+
+      newNamespace = await Namespaces.load({namespace: namespace});
+    }
   }
+
   return newNamespace;
 }
