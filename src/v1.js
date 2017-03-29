@@ -180,18 +180,18 @@ function isNamespaceValid(namespace, cfg) {
  * If the requested namespace exists, update it with any user-supplied settnigs,
  * and return it.
  */
-async function setNamespace({rabbitManager, Namespaces}, namespace, {contact, expires}) {
+async function setNamespace({cfg, rabbitManager, Namespaces}, namespace, {contact, expires}) {
   let newNamespace;
   try {
     newNamespace = await Namespaces.create({
-      namespace:  namespace,
-      username:   namespace,
-      password:   slugid.v4(),
-      created:    new Date(),
-      expires:    expires,
+      namespace: namespace,
+      username: namespace,
+      password: slugid.v4(),
+      created: new Date(),
+      expires,
       rotationState:  '1',
-      nextRotation: taskcluster.fromNow('1 hour'),
-      contact:    contact,
+      nextRotation: taskcluster.fromNow(cfg.namespaceRotationInterval),
+      contact,
     });
 
     await rabbitManager.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
