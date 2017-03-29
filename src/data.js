@@ -77,15 +77,14 @@ Namespace.prototype.username = function() {
 };
 
 let setPulseUser = async function({username, password, namespace, rabbitManager, cfg}) {
-  await rabbitManager.createUser(username, password, ['taskcluster-pulse']);
+  await rabbitManager.createUser(username, password, cfg.app.userTags);
 
-  // TODO: make these configurable too
   await rabbitManager.setUserPermissions(
     username,
-    '/',
-    `^taskcluster/(exchanges|queues)/${namespace}/.*`,
-    `^taskcluster/(exchanges|queues)/${namespace}/.*`,
-    '^taskcluster/exchanges/.*',
+    cfg.app.virtualhost,
+    cfg.app.userConfigPermission.replace('{{namespace}}', namespace),
+    cfg.app.userWritePermission.replace('{{namespace}}', namespace),
+    cfg.app.userReadPermission.replace('{{namespace}}', namespace),
   );
 };
 

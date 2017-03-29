@@ -9,12 +9,23 @@ defaults:
     # namespaces are rotated at this time interval.
     namespaceRotationInterval: '1 hour'
 
+    # the virtualhost to manage
+    virtualhost: /
+
+    # permissions to give to users; {{namespace}} is replaced by the namespace
+    userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
+    userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
+    userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
+
+    # tags to be applied to new users
+    userTags: [taskcluster-pulse]
+
     # If given, all namespaces must begin with this string; and only
     # matching queues and exchanges will be monitored.  Use this to
-    # allow taskcluster-pulse to "share" a rabbitmq server with other
+    # allow taskcluster-pulse to "share" a rabbitmq virtualhost with other
     # users.
-    namespacePrefix: !env NAMESPACE_PREFIX
-    # TODO: add virtualHost too
+    namespacePrefix: 'taskcluster-'
+
     amqpUrl: !env TASKCLUSTER_AMQP_URL
 
   aws:
