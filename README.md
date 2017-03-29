@@ -4,19 +4,34 @@ Taskcluster Pulse Management Service
 [![Build Status](https://travis-ci.org/taskcluster/taskcluster-pulse.svg?branch=master)](https://travis-ci.org/taskcluster/taskcluster-pulse)
 [![License](https://img.shields.io/badge/license-MPL%202.0-orange.svg)](http://mozilla.org/MPL/2.0)
 
-A service to manage Pulse credentials for anything using
-Taskcluster credentials. This allows us self-service and
-greater control within the Taskcluster project.
+A service to manage Pulse credentials for anything using Taskcluster
+credentials. This allows us self-service and greater control within the
+Taskcluster project.
 
-Usage
------
+Operation
+---------
 
-Write this later.
+Services using pulse credentials call this service's `claimNamespace` endpoint
+to claim a "namespace" in pulse, allowing access to exchanges and queues based
+on that namespace.
 
-Options and Defaults
---------------------
+The  service must call the endpoint periodically, each time getting a fresh
+username and password to access pulse.  Access is checked each time using
+Taskcluster credentials.
 
-Write this later.
+The service monitors the existing credentials:
+
+* rotating the password on unclaimed credentials
+* notifying owners of, and eventually deleting queues which grow too large
+* deleting queues and exchanges when the corresponding namespace expires
+
+Status
+------
+
+This service is not in production yet.
+
+It does not yet connect to pulse, and the queue monitoring mentioned above is
+not yet complete.
 
 Testing
 -------
