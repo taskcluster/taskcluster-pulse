@@ -20,6 +20,7 @@ let testclients = {
 
 // Create and export helper object
 let helper = module.exports = {};
+helper.cfg = cfg;
 
 let webServer = null;
 

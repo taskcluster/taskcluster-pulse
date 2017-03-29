@@ -20,6 +20,12 @@ properties:
     type:           string
     title:          Password
     description:    The password created for authentication
+  reclaimAt:
+    description: |
+      The caller should plan to call `claimNamespace` again at this time. The provided
+      password will become invalid a short time after this.
+    type:       string
+    format:     date-time
   expires:
     description: |
       Date-time after which the username, and all associated queues and

@@ -66,6 +66,7 @@ test:
   app:
     amqpUrl: 'amqp://localhost'
     namespacePrefix: 'tcpulse-test-'
+    namespaceRotationInterval: '1 hour'
 
   taskcluster:
     credentials:

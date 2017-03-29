@@ -139,12 +139,14 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await setNamespace(this, namespace, {
+  let newNamespace = await this.Namespaces.claim({
+    cfg: this.cfg,
+    rabbitManager: this.rabbitManager,
+    namespace,
     contact: req.body.contact,
     expires: new Date(req.body.expires),
   });
-  res.reply(newNamespace.json());
-  // TODO: return re-claim time
+  res.reply(newNamespace.json(this.cfg));
 });
 
 /**
@@ -173,68 +175,4 @@ function isNamespaceValid(namespace, cfg) {
     return false;
   }
   return true;
-}
-
-/*
- * Attempt to create a new namespace entry and associated Rabbit user.
- * If the requested namespace exists, update it with any user-supplied settnigs,
- * and return it.
- */
-async function setNamespace({cfg, rabbitManager, Namespaces}, namespace, {contact, expires}) {
-  let newNamespace;
-  try {
-    newNamespace = await Namespaces.create({
-      namespace: namespace,
-      username: namespace,
-      password: slugid.v4(),
-      created: new Date(),
-      expires,
-      rotationState:  '1',
-      nextRotation: taskcluster.fromNow(cfg.namespaceRotationInterval),
-      contact,
-    });
-
-    await rabbitManager.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
-    await rabbitManager.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
-
-    //set up user pairs in rabbitmq, both users are used for auth rotations
-    // TODO: make these configurable too
-    await rabbitManager.setUserPermissions(
-      namespace.concat('-1'),                                         //username
-      '/',                                                            //vhost
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
-      '^taskcluster/exchanges/.*'                                      //read pattern
-      );
-
-    await rabbitManager.setUserPermissions(
-      namespace.concat('-2'),                                         //username
-      '/',                                                            //vhost
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
-      '^taskcluster/exchanges/.*'                                      //read pattern
-      );
-
-  } catch (err) {
-    if (err.code !== 'EntityAlreadyExists') {
-      throw err;
-    }
-
-    // get the existing row
-    newNamespace = await Namespaces.load({namespace: namespace});
-
-    // If this claim contains different information, update it accordingly
-    if (!_.isEqual(
-      {expires: newNamespace.expires, contact: newNamespace.contact},
-      {expires, contact})) {
-      await newNamespace.modify(entity => {
-        entity.expires = expires;
-        entity.contact = contact;
-      });
-
-      newNamespace = await Namespaces.load({namespace: namespace});
-    }
-  }
-
-  return newNamespace;
 }

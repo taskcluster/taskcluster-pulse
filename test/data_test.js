@@ -146,7 +146,7 @@ suite('Namespaces', () => {
     }
 
     test('rotate namespace - no entries', async () => {
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
 
       let count = 0;
       await namespaces.scan({},
@@ -174,7 +174,7 @@ suite('Namespaces', () => {
         contact:  {},
       });
 
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
 
       var ns = await namespaces.load({namespace: 'tcpulse-test-sample'});
       assert(ns, 'namespace should exist');
@@ -208,7 +208,7 @@ suite('Namespaces', () => {
         contact:  {},
       });
 
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
 
       var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
       var ns2 = await namespaces.load({namespace: 'tcpulse-test-sample2'});
@@ -247,7 +247,7 @@ suite('Namespaces', () => {
         contact:  {},
       });
 
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
 
       var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
       var ns2 = await namespaces.load({namespace: 'tcpulse-test-sample2'});
@@ -280,11 +280,11 @@ suite('Namespaces', () => {
         assert(ns1.rotationState === state, 'tcpulse-test-sample1 should have rotated state');
       };
 
-      await namespaces.rotate(taskcluster.fromNow('0 days'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('0 days'), helper.cfg, helper.rabbit);
       await assertRotationState('2');
-      await namespaces.rotate(taskcluster.fromNow('1 day'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('1 day'), helper.cfg, helper.rabbit);
       await assertRotationState('1');
-      await namespaces.rotate(taskcluster.fromNow('2 days'), helper.rabbit);
+      await namespaces.rotate(taskcluster.fromNow('2 days'), helper.cfg, helper.rabbit);
       await assertRotationState('2');
     });
   });

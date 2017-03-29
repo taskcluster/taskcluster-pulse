@@ -137,7 +137,7 @@ let load = loader({
 
       // rotate namespace username entries using delay
       debug('Rotating namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespaces.rotate(now, rabbitManager);
+      let count = await Namespaces.rotate(now, cfg, rabbitManager);
       debug('Rotating %s namespace entries', count);
 
       monitor.count('rotate-namespaces.done');

@@ -89,8 +89,6 @@ class RabbitManager {
    *     Other custom tags are also allowed. Tags cannot contain comma (',').
    */
   async createUser(name, password, tags) {
-    assert(name);
-    assert(password);
     assert(tags instanceof Array);
 
     let payload = {
