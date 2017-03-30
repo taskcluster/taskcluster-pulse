@@ -97,6 +97,7 @@ api.declare({
 
   retval.namespaces = data.entries.map(ns => ({
     namespace: ns.namespace,
+    created: ns.created.toJSON(),
     contact: ns.contact,
   }));
 
@@ -123,32 +124,31 @@ api.declare({
     'namespace good for a short time.  Clients should call this endpoint again',
     'at the re-claim time given in the response, as the password will be rotated',
     'soon after that time.  The namespace will expire, and any associated queues',
-    'and exchanges will be deleted, at the given expiration time',
+    'and exchanges will be deleted, at the given expiration time.',
+    '',
+    'The `expires` and `contact` properties can be updated at any time in a reclaim',
+    'operation.',
   ].join('\n'),
 }, async function(req, res) {
   let {namespace} = req.params;
-  let contact = req.body.contact; //the contact information
 
-  // TODO: verify user has scopes for the given contact information
-  // (requires deferAuth: true)
-
-  // TODO: allow user to specify expiration time
+  // NOTE: at the moment we do not confirm that the user has permission to send
+  // the given notification.  The possibility of abuse is remote (and would
+  // involve abusing pulse), but we can solve this problem if and when we have
+  // it.
 
   if (!isNamespaceValid(namespace, this.cfg)) {
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await setNamespace(this, namespace, contact);
-  res.reply({
-    namespace:  newNamespace.namespace,
-    username:   this.Namespaces.getRotationUsername(newNamespace),
-    password:   newNamespace.password,
-    contact:    newNamespace.contact,
-    // TODO: return expiration, re-claim time
-    // note: returned re-claim time is not nextRotation, as calling
-    // before that rotation occurs could result in being told to call
-    // again immediately. Think carefully about which time is best.
+  let newNamespace = await this.Namespaces.claim({
+    cfg: this.cfg,
+    rabbitManager: this.rabbitManager,
+    namespace,
+    contact: req.body.contact,
+    expires: new Date(req.body.expires),
   });
+  res.reply(newNamespace.json(this.cfg));
 });
 
 /**
@@ -177,56 +177,4 @@ function isNamespaceValid(namespace, cfg) {
     return false;
   }
   return true;
-}
-
-/*
- * Attempt to create a new namespace entry and associated Rabbit user.
- * If the requested namespace exists, return it.
- */
-async function setNamespace({rabbitManager, Namespaces}, namespace, contact) {
-  let newNamespace;
-  try {
-    newNamespace = await Namespaces.create({
-      namespace:  namespace,
-      username:   namespace,
-      password:   slugid.v4(),
-      created:    new Date(),
-      // TODO: make these times configurable
-      expires:    taskcluster.fromNow('1 day'),
-      rotationState:  '1',
-      nextRotation: taskcluster.fromNow('1 hour'),
-      contact:    contact,
-    });
-
-    await rabbitManager.createUser(namespace.concat('-1'), newNamespace.password, ['taskcluster-pulse']);
-    await rabbitManager.createUser(namespace.concat('-2'), newNamespace.password, ['taskcluster-pulse']);
-
-    //set up user pairs in rabbitmq, both users are used for auth rotations
-    // TODO: make these configurable too
-    await rabbitManager.setUserPermissions(
-      namespace.concat('-1'),                                         //username
-      '/',                                                            //vhost
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
-      '^taskcluster/exchanges/.*'                                      //read pattern
-      );
-
-    await rabbitManager.setUserPermissions(
-      namespace.concat('-2'),                                         //username
-      '/',                                                            //vhost
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //configure pattern
-      `^taskcluster/(exchanges|queues)/${newNamespace.namespace}/.*`,  //write pattern
-      '^taskcluster/exchanges/.*'                                      //read pattern
-      );
-
-  } catch (err) {
-    if (err.code !== 'EntityAlreadyExists') {
-      throw err;
-    }
-
-    // TODO: verify settings are the same, or modify existing settings
-
-    newNamespace = await Namespaces.load({namespace: namespace});
-  }
-  return newNamespace;
 }

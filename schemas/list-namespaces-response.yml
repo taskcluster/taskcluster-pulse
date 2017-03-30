@@ -20,6 +20,10 @@ properties:
           type:           string
           description: |
             The namespace's name
+        created:
+          description:    Date-time at which this namespace was first claimed.
+          type:           string
+          format:         date-time
         contact:
           type:           object
           title:          Contact Information

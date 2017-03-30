@@ -116,7 +116,6 @@ let load = loader({
     requires: ['cfg', 'Namespaces', 'monitor'],
     setup: async ({cfg, Namespaces, monitor}) => {
       let now = taskcluster.fromNow(cfg.app.namespacesExpirationDelay);
-      assert(!_.isNaN(now), 'Can\'t have NaN as now');
 
       // Expire namespace entries using delay
       debug('Expiring namespace entry at: %s, from before %s', new Date(), now);
@@ -133,11 +132,10 @@ let load = loader({
     requires: ['cfg', 'Namespaces', 'monitor', 'rabbitManager'],
     setup: async ({cfg, Namespaces, monitor, rabbitManager}) => {
       let now = taskcluster.fromNow(cfg.app.namespacesRotationDelay);
-      assert(!_.isNaN(now), 'Can\'t have NaN as now');
 
       // rotate namespace username entries using delay
       debug('Rotating namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespaces.rotate(now, rabbitManager);
+      let count = await Namespaces.rotate(now, cfg, rabbitManager);
       debug('Rotating %s namespace entries', count);
 
       monitor.count('rotate-namespaces.done');
