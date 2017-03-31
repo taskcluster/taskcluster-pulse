@@ -184,6 +184,21 @@ suite('API', () => {
     });
   });
 
+  suite('namespace', function() {
+    test('returns namespace', async () => {
+      await helper.pulse.claimNamespace('tcpulse-test-sample', {
+        expires: taskcluster.fromNow('1 day'),
+        contact: {
+          method: 'email',
+          payload: {address: 'a@a.com'},
+        },
+      });
+
+      let res = await helper.pulse.namespace('tcpulse-test-sample');
+      assert.equal(res.namespace, 'tcpulse-test-sample');
+    });
+  });
+
   suite('listNamespaces', function() {
     test('returns namespaces', async () => {
       // create a bunch of namespaces
