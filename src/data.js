@@ -82,9 +82,9 @@ let setPulseUser = async function({username, password, namespace, rabbitManager,
   await rabbitManager.setUserPermissions(
     username,
     cfg.app.virtualhost,
-    cfg.app.userConfigPermission.replace('{{namespace}}', namespace),
-    cfg.app.userWritePermission.replace('{{namespace}}', namespace),
-    cfg.app.userReadPermission.replace('{{namespace}}', namespace),
+    cfg.app.userConfigPermission.replace(/{{namespace}}/, namespace),
+    cfg.app.userWritePermission.replace(/{{namespace}}/, namespace),
+    cfg.app.userReadPermission.replace(/{{namespace}}/, namespace),
   );
 };
 
