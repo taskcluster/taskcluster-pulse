@@ -71,7 +71,7 @@ api.declare({
   method:         'get',
   route:          '/namespaces',
   name:           'listNamespaces',
-  stability:      API.stability.stable,
+  stability:      'experimental',
   output:         'list-namespaces-response.json',
   title:          'List Namespaces',
   query: {
@@ -95,11 +95,8 @@ api.declare({
   var retval = {};
   var data = await this.Namespaces.scan({}, {limit, continuation});
 
-  retval.namespaces = data.entries.map(ns => ({
-    namespace: ns.namespace,
-    created: ns.created.toJSON(),
-    contact: ns.contact,
-  }));
+  retval.namespaces = data.entries.map(ns =>
+    ns.json({cfg: this.cfg, includePassword: false}));
 
   if (data.continuation) {
     retval.continuationToken = data.continuation;
@@ -148,7 +145,7 @@ api.declare({
     contact: req.body.contact,
     expires: new Date(req.body.expires),
   });
-  res.reply(newNamespace.json(this.cfg));
+  res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
 });
 
 /**
