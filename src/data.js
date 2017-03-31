@@ -54,22 +54,26 @@ let Namespace = Entity.configure({
   },
 });
 
-Namespace.prototype.json = function(cfg) {
-  // calculate the reclaimAt as half the rotation interval past the
-  // next rotation time
-  let nextRotation = this.nextRotation;
-  let rotationAfter = taskcluster.fromNow(cfg.app.namespaceRotationInterval, nextRotation);
-  let reclaimAt = new Date(nextRotation.getTime() + (rotationAfter - nextRotation) / 2);
-
-  return {
+Namespace.prototype.json = function({cfg, includePassword}) {
+  let rv = {
     namespace: this.namespace,
-    username: this.username(),
-    password: this.password,
     created: this.created.toJSON(),
     expires: this.expires.toJSON(),
-    reclaimAt: reclaimAt.toJSON(),
     contact: this.contact,
   };
+  if (includePassword) {
+    // calculate the reclaimAt as half the rotation interval past the
+    // next rotation time
+    let nextRotation = this.nextRotation;
+    let rotationAfter = taskcluster.fromNow(cfg.app.namespaceRotationInterval, nextRotation);
+    let reclaimAt = new Date(nextRotation.getTime() + (rotationAfter - nextRotation) / 2);
+
+    rv.username = this.username();
+    rv.password = this.password;
+    rv.reclaimAt = reclaimAt.toJSON();
+  }
+
+  return rv;
 };
 
 Namespace.prototype.username = function() {

@@ -71,7 +71,7 @@ api.declare({
   method:         'get',
   route:          '/namespaces',
   name:           'listNamespaces',
-  stability:      API.stability.stable,
+  stability:      'experimental',
   output:         'list-namespaces-response.json',
   title:          'List Namespaces',
   query: {
@@ -95,17 +95,39 @@ api.declare({
   var retval = {};
   var data = await this.Namespaces.scan({}, {limit, continuation});
 
-  retval.namespaces = data.entries.map(ns => ({
-    namespace: ns.namespace,
-    created: ns.created.toJSON(),
-    contact: ns.contact,
-  }));
+  retval.namespaces = data.entries.map(ns =>
+    ns.json({cfg: this.cfg, includePassword: false}));
 
   if (data.continuation) {
     retval.continuationToken = data.continuation;
   }
 
   return res.reply(retval);
+});
+
+api.declare({
+  method:   'get',
+  route:    '/namespace/:namespace',
+  name:     'namespace',
+  title:    'Get a namespace',
+  output:   'namespace.json',
+  stability: 'experimental',
+  description: [
+    'Get public information about a single namespace. This is the same information',
+    'as returned by `listNamespaces`.',
+  ].join('\n'),
+}, async function(req, res) {
+  let {namespace} = req.params;
+
+  if (!isNamespaceValid(namespace, this.cfg)) {
+    return invalidNamespaceResponse(req, res, this.cfg);
+  }
+
+  let ns = await this.Namespaces.load({namespace});
+  if (!ns) {
+    return res.reportError('ResourceNotFound', 'No such namespace', {});
+  }
+  res.reply(ns.json({cfg: this.cfg, includePassword: false}));
 });
 
 api.declare({
@@ -148,7 +170,7 @@ api.declare({
     contact: req.body.contact,
     expires: new Date(req.body.expires),
   });
-  res.reply(newNamespace.json(this.cfg));
+  res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
 });
 
 /**
