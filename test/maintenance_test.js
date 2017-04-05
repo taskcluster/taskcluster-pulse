@@ -4,28 +4,29 @@ suite('Namespace', () => {
   let helper = require('./helper');
   let load = require('../lib/main');
   let slugid = require('slugid');
+  let maintenance = require('../lib/maintenance');
 
-  let namespaces;
+  let Namespace;
 
   setup(async () => {
     //set up the namespace entities
-    namespaces = await load('Namespace', {profile: 'test', process: 'test'});
+    Namespace = await load('Namespace', {profile: 'test', process: 'test'});
 
     //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
-    await namespaces.ensureTable();
+    await Namespace.ensureTable();
   });
 
   teardown(async () => {
     //remove the namespace entities
-    await namespaces.removeTable();
+    await Namespace.removeTable();
   });
 
   suite('expire namespace', function() {
     test('expire namespace - no entries', async () => {
-      await namespaces.expire(taskcluster.fromNow('0 hours'));
+      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
 
       let count = 0;
-      await namespaces.scan({},
+      await Namespace.scan({},
         {
           limit:            250,
           handler:          (ns) => {
@@ -37,7 +38,7 @@ suite('Namespace', () => {
     });
 
     test('expire namespace - one entry', async () => {
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'e1',
         username: slugid.v4(),
         password: slugid.v4(),
@@ -48,10 +49,10 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.expire(taskcluster.fromNow('0 hours'));
+      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
 
       let count = 0;
-      await namespaces.scan({},
+      await Namespace.scan({},
         {
           limit:            250, // max number of concurrent delete operations
           handler:          (ns) => {
@@ -63,7 +64,7 @@ suite('Namespace', () => {
     });
 
     test('expire namespace - two entries', async () => {
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'e1',
         username: slugid.v4(),
         password: slugid.v4(),
@@ -74,7 +75,7 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'e2',
         username: slugid.v4(),
         password: slugid.v4(),
@@ -85,10 +86,10 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.expire(taskcluster.fromNow('0 hours'));
+      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
 
       let count = 0;
-      await namespaces.scan({},
+      await Namespace.scan({},
         {
           limit:            250, // max number of concurrent delete operations
           handler:          (ns) => {
@@ -100,7 +101,7 @@ suite('Namespace', () => {
     });
 
     test('expire namespace - one of two entries', async () => {
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'e1',
         username: slugid.v4(),
         password: slugid.v4(),
@@ -111,7 +112,7 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'e2',
         username: slugid.v4(),
         password: slugid.v4(),
@@ -122,11 +123,11 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.expire(taskcluster.fromNow('0 hours'));
+      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
 
       let count = 0;
       let name = '';
-      await namespaces.scan({},
+      await Namespace.scan({},
         {
           limit:            250, // max number of concurrent delete operations
           handler:          (ns) => {
@@ -146,10 +147,15 @@ suite('Namespace', () => {
     }
 
     test('rotate namespace - no entries', async () => {
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
 
       let count = 0;
-      await namespaces.scan({},
+      await Namespace.scan({},
         {
           limit:            250,
           handler:          (ns) => {
@@ -163,7 +169,7 @@ suite('Namespace', () => {
     test('rotate namespace - one entry', async () => {
       var old_pass = slugid.v4();
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'tcpulse-test-sample',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -174,9 +180,14 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
 
-      var ns = await namespaces.load({namespace: 'tcpulse-test-sample'});
+      var ns = await Namespace.load({namespace: 'tcpulse-test-sample'});
       assert(ns, 'namespace should exist');
       assert(ns.rotationState==='2', 'namespace should have rotated state');
       assert(ns.password !== old_pass, 'rotated namespace should have new password');
@@ -186,7 +197,7 @@ suite('Namespace', () => {
     test('rotate namespace - two entry', async () => {
       var old_pass = slugid.v4();
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'tcpulse-test-sample1',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -197,7 +208,7 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'tcpulse-test-sample2',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -208,10 +219,15 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
 
-      var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
-      var ns2 = await namespaces.load({namespace: 'tcpulse-test-sample2'});
+      var ns1 = await Namespace.load({namespace: 'tcpulse-test-sample1'});
+      var ns2 = await Namespace.load({namespace: 'tcpulse-test-sample2'});
 
       assert(ns1 && ns2, 'namespaces should exist');
       assert(ns1.rotationState==='2', 'tcpulse-test-sample1 should have rotated state');
@@ -225,7 +241,7 @@ suite('Namespace', () => {
     test('rotate namespace - one of two entry', async () => {
       var old_pass = slugid.v4();
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'tcpulse-test-sample1',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -236,7 +252,7 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'tcpulse-test-sample2',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -247,10 +263,15 @@ suite('Namespace', () => {
         contact:  {},
       });
 
-      await namespaces.rotate(taskcluster.fromNow('0 hours'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
 
-      var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
-      var ns2 = await namespaces.load({namespace: 'tcpulse-test-sample2'});
+      var ns1 = await Namespace.load({namespace: 'tcpulse-test-sample1'});
+      var ns2 = await Namespace.load({namespace: 'tcpulse-test-sample2'});
 
       assert(ns1 && ns2, 'namespaces should exist');
       assert(ns1.rotationState==='2', 'tcpulse-test-sample1 should have rotated state');
@@ -263,7 +284,7 @@ suite('Namespace', () => {
     test('rotate namespace - multiple rotations', async () => {
       var old_pass = slugid.v4();
 
-      await namespaces.create({
+      await Namespace.create({
         namespace: 'tcpulse-test-sample1',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -275,17 +296,33 @@ suite('Namespace', () => {
       });
 
       var assertRotationState = async (state) => {
-        var ns1 = await namespaces.load({namespace: 'tcpulse-test-sample1'});
+        var ns1 = await Namespace.load({namespace: 'tcpulse-test-sample1'});
         assert(ns1, 'namespaces should exist');
         assert(ns1.rotationState === state, 'tcpulse-test-sample1 should have rotated state');
       };
 
-      await namespaces.rotate(taskcluster.fromNow('0 days'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('0 days'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
       await assertRotationState('2');
-      await namespaces.rotate(taskcluster.fromNow('1 day'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('1 day'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
       await assertRotationState('1');
-      await namespaces.rotate(taskcluster.fromNow('2 days'), helper.cfg, helper.rabbit);
+      await maintenance.rotate({
+        Namespace,
+        now: taskcluster.fromNow('2 days'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
       await assertRotationState('2');
     });
   });
 });
+

@@ -1,9 +1,8 @@
 let API = require('taskcluster-lib-api');
 let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
-let taskcluster = require('taskcluster-client');
-let slugid = require('slugid');
 let _ = require('lodash');
+let {claim} = require('./maintenance');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -163,7 +162,8 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await this.Namespace.claim({
+  let newNamespace = await claim({
+    Namespace: this.Namespace,
     cfg: this.cfg,
     rabbitManager: this.rabbitManager,
     namespace,
