@@ -122,7 +122,7 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let ns = await this.Namespace.load({namespace});
+  let ns = await this.Namespace.load({namespace}, true);
   if (!ns) {
     return res.reportError('ResourceNotFound', 'No such namespace', {});
   }

@@ -12,7 +12,8 @@ defaults:
     # the virtualhost to manage
     virtualhost: /
 
-    # permissions to give to users; {{namespace}} is replaced by the namespace
+    # permissions to give to users; {{namespace}} is replaced by the namespace.  Note that
+    # when users are deleted, anything that user had permission to configure is also deleted!
     userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
