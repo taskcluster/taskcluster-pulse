@@ -120,11 +120,64 @@ class RabbitManager {
     return await this.request('users');
   }
 
+  /** Get information of an invididual user.
+   *
+   * @param {string} name       - user name.
+   */
+  async user(name) {
+    return await this.request(`users/${name}`);
+  }
+
   /**
    * Get a list of all exchanges
    */
   async exchanges() {
     return await this.request('exchanges');
+  }
+
+  /**
+   * Get information of an individual exchange.
+   *
+   * @param {string} name       - Name of the queue.
+   * @param {string} vhost      - Virtual host.
+   * @default
+   */
+  async exchange(name, vhost='/') {
+    assert(name);
+    assert(vhost);
+
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`exchanges/${vhost}/${name}`);
+  }
+
+  /**
+   * Create an exchange.
+   *
+   * @param {string} name       - Name of the exchange.
+   * @param {Object} options    - Settings of the exchange (default is {type: 'direct'}; all keys are optional).
+   * @param {string} vhost      - Virtual host (default is "/").
+   */
+  async createExchange(name, options={type: 'direct'}, vhost='/') {
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`exchanges/${vhost}/${name}`, {
+      body: JSON.stringify(options),
+      method: 'put',
+    });
+  }
+
+  /**
+   * Delete an exchange
+   *
+   * @param {string} name       - Name of the exchange.
+   * @param {string} vhost      - Virtual host.
+   * @default
+   */
+  async deleteExchange(name, vhost='/') {
+    assert(name);
+    assert(vhost);
+
+    [name, vhost] = this.encode([name, vhost]);
+    return await this.request(`exchanges/${vhost}/${name}`, {method: 'delete'});
   }
 
   /**

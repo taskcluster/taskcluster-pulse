@@ -78,6 +78,10 @@ test:
     amqpUrl: 'amqp://localhost'
     namespacePrefix: 'tcpulse-test-'
     namespaceRotationInterval: '1 hour'
+    virtualhost: /
+    userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
+    userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
+    userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
 
   taskcluster:
     credentials:

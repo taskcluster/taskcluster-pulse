@@ -77,16 +77,50 @@ module.exports.claim = async function({Namespace, cfg, rabbitManager, namespace,
   return newNamespace;
 };
 
-module.exports.expire = async function({Namespace, now}) {
-  assert(now instanceof Date, 'now must be given as option');
+module.exports.delete = async function({Namespace, rabbitManager, cfg, namespace}) {
+  let debug = Debug('delete');
+
+  // use the configuration regexp to determine if an object is owned by this user
+  let owned = new RegExp(cfg.app.userConfigPermission.replace(/{{namespace}}/g, namespace));
+
+  // find the user's exchanges and queues
+  let exchanges = _.filter(await rabbitManager.exchanges(),
+    e => e.vhost === cfg.app.virtualhost && owned.test(e.name));
+  let queues = _.filter(await rabbitManager.queues(),
+    q => q.vhost === cfg.app.virtualhost && owned.test(q.name));
+
+  // delete sequentually to avoid overloading the rabbitmq server
+  for (let i = 0; i < exchanges.length; i++) {
+    let name = exchanges[i].name;
+    debug(`deleting exchange ${name}`);
+    await rabbitManager.deleteExchange(name, cfg.app.virtualhost);
+  }
+  for (let i = 0; i < queues.length; i++) {
+    let name = queues[i].name;
+    debug(`deleting queue ${name}`);
+    await rabbitManager.deleteQueue(name, cfg.app.virtualhost);
+  }
+
+  // try to delete both users
+  await rabbitManager.deleteUser(`${namespace}-1`, cfg.app.virtualhost);
+  await rabbitManager.deleteUser(`${namespace}-2`, cfg.app.virtualhost);
+
+  // finally, delete the table row
+  Namespace.remove({namespace});
+};
+
+module.exports.expire = async function({Namespace, cfg, rabbitManager, now}) {
   let count = 0;
+  let debug = Debug('expire');
+
   await Namespace.scan({
     expires: Namespace.op.lessThan(now),
   }, {
     limit:            250, // max number of concurrent delete operations
-    handler:          (ns) => {
+    handler:          async (ns) => {
       count++;
-      return ns.remove(true);
+      debug(`deleting expired namespace ${ns.namespace}`);
+      await module.exports.delete({Namespace, rabbitManager, cfg, namespace: ns.namespace});
     },
   });
   return count;

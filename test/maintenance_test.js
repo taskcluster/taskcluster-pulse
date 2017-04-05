@@ -21,123 +21,100 @@ suite('Namespace', () => {
     await Namespace.removeTable();
   });
 
-  suite('expire namespace', function() {
-    test('expire namespace - no entries', async () => {
-      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
+  let shouldFail = async fn => {
+    try {
+      await fn();
+    } catch (err) {
+      return err;
+    }
+    throw new Error('did not fail');
+  };
 
-      let count = 0;
-      await Namespace.scan({},
-        {
-          limit:            250,
-          handler:          (ns) => {
-            count++;
-          },
-        });
+  // note that claim is adequately tested via api_test.js
 
-      assert(count===0, 'expired namespace not removed');
-    });
-
-    test('expire namespace - one entry', async () => {
-      await Namespace.create({
-        namespace: 'e1',
-        username: slugid.v4(),
-        password: slugid.v4(),
-        created:  new Date(),
-        expires:  taskcluster.fromNow('- 1 day'),
-        rotationState: '1',
-        nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+  suite('delete namespace', function() {
+    test('delete namespace - namespace with queues and exchanges', async () => {
+      let ns = await maintenance.claim({
+        Namespace,
+        rabbitManager: helper.rabbit,
+        cfg: helper.cfg,
+        namespace: 'bar',
+        contact: {method: 'email', payload: {address: 'a@b.c'}},
+        expires: taskcluster.fromNow('1 hours'),
       });
 
-      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
+      let username = ns.username();
+      await helper.rabbit.user(username); // check that user exists
+
+      await helper.rabbit.createQueue('queue/notbar/abc');
+      await helper.rabbit.createQueue('queue/bar/abc');
+      await helper.rabbit.createQueue('queue/bar/def');
+      await helper.rabbit.createExchange('exchange/notbar/events');
+      await helper.rabbit.createExchange('exchange/bar/events');
+
+      await maintenance.delete({
+        Namespace,
+        rabbitManager: helper.rabbit,
+        cfg: helper.cfg,
+        namespace: 'bar',
+      });
+
+      // make sure everything's gone
+      await shouldFail(() => helper.rabbit.user(username));
+      await helper.rabbit.queue('queue/notbar/abc'); // not deleted!
+      await shouldFail(() => helper.rabbit.queue('queue/bar/abc'));
+      await shouldFail(() => helper.rabbit.queue('queue/bar/def'));
+      await helper.rabbit.exchange('exchange/notbar/events'); // not deleted!
+      await shouldFail(() => helper.rabbit.exchange('exchange/bar/events'));
+      ns = await Namespace.load({namespace: 'bar'}, true);
+      assert.equal(ns, undefined);
+    });
+  });
+
+  suite('expire namespace', function() {
+    test('expire namespace - no entries', async () => {
+      await maintenance.expire({
+        Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
 
       let count = 0;
-      await Namespace.scan({},
-        {
-          limit:            250, // max number of concurrent delete operations
-          handler:          (ns) => {
-            count++;
-          },
-        });
-
-      assert(count===0, 'expired namespace not removed');
+      await Namespace.scan({}, {handler: (ns) => count++});
+      assert(count===0);
     });
 
     test('expire namespace - two entries', async () => {
-      await Namespace.create({
+      await maintenance.claim({
+        Namespace,
+        rabbitManager: helper.rabbit,
+        cfg: helper.cfg,
         namespace: 'e1',
-        username: slugid.v4(),
-        password: slugid.v4(),
-        created:  new Date(),
-        expires:  taskcluster.fromNow('- 1 day'),
-        rotationState: '1',
-        nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: {method: 'email', payload: {address: 'a@b.c'}},
+        expires: taskcluster.fromNow('-1 day'),
       });
 
-      await Namespace.create({
+      await maintenance.claim({
+        Namespace,
+        rabbitManager: helper.rabbit,
+        cfg: helper.cfg,
         namespace: 'e2',
-        username: slugid.v4(),
-        password: slugid.v4(),
-        created:  new Date(),
-        expires:  taskcluster.fromNow('- 1 day'),
-        rotationState: '1',
-        nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: {method: 'email', payload: {address: 'a@b.c'}},
+        expires: taskcluster.fromNow('11 day'),
       });
 
-      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
-
-      let count = 0;
-      await Namespace.scan({},
-        {
-          limit:            250, // max number of concurrent delete operations
-          handler:          (ns) => {
-            count++;
-          },
-        });
-
-      assert(count===0, 'expired namespaces not removed');
-    });
-
-    test('expire namespace - one of two entries', async () => {
-      await Namespace.create({
-        namespace: 'e1',
-        username: slugid.v4(),
-        password: slugid.v4(),
-        created:  new Date(),
-        expires:  taskcluster.fromNow('- 1 day'),
-        rotationState: '1',
-        nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+      await maintenance.expire({
+        Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
       });
 
-      await Namespace.create({
-        namespace: 'e2',
-        username: slugid.v4(),
-        password: slugid.v4(),
-        created:  new Date(),
-        expires:  taskcluster.fromNow('1 day'),
-        rotationState: '1',
-        nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
-      });
+      let remaining = [];
+      await Namespace.scan({}, {handler: (ns) => remaining.push(ns.namespace)});
 
-      await maintenance.expire({Namespace, now: taskcluster.fromNow('0 hours')});
-
-      let count = 0;
-      let name = '';
-      await Namespace.scan({},
-        {
-          limit:            250, // max number of concurrent delete operations
-          handler:          (ns) => {
-            name=ns.namespace;
-            count++;
-          },
-        });
-
-      assert(count===1, 'one namespace should still be active');
-      assert(name==='e2', 'wrong namespace removed');
+      assert.deepEqual(remaining, ['e2']);
     });
   });
 
