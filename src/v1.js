@@ -2,7 +2,7 @@ let API = require('taskcluster-lib-api');
 let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
 let _ = require('lodash');
-let {claim} = require('./maintenance');
+let maintenance = require('./maintenance');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -162,7 +162,7 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await claim({
+  let newNamespace = await maintenance.claim({
     Namespace: this.Namespace,
     cfg: this.cfg,
     rabbitManager: this.rabbitManager,
@@ -171,6 +171,39 @@ api.declare({
     expires: new Date(req.body.expires),
   });
   res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
+});
+
+api.declare({
+  method:   'delete',
+  route:    '/namespace/:namespace',
+  name:     'deleteNamespace',
+  title:    'Delete a namespace',
+  stability: 'experimental',
+  scopes:   [
+    ['pulse:namespace:<namespace>'],
+  ],
+  description: [
+    'Immediately delete the given namespace.  This will delete all exchanges and queues which the',
+    'namespace had configure access to, as if it had just expired.',
+  ].join('\n'),
+}, async function(req, res) {
+  let {namespace} = req.params;
+
+  if (!isNamespaceValid(namespace, this.cfg)) {
+    return invalidNamespaceResponse(req, res, this.cfg);
+  }
+
+  let ns = await this.Namespace.load({namespace}, true);
+  if (ns) {
+    await maintenance.delete({
+      Namespace: this.Namespace,
+      rabbitManager: this.rabbitManager,
+      cfg: this.cfg,
+      namespace,
+    });
+  }
+
+  res.reply({});
 });
 
 /**
