@@ -19,7 +19,7 @@ let api = new API({
   context: [
     'cfg',
     'rabbitManager',
-    'Namespaces',
+    'Namespace',
   ],
   errorCodes: {
     InvalidNamespace: 400,
@@ -93,7 +93,7 @@ api.declare({
   }
 
   var retval = {};
-  var data = await this.Namespaces.scan({}, {limit, continuation});
+  var data = await this.Namespace.scan({}, {limit, continuation});
 
   retval.namespaces = data.entries.map(ns =>
     ns.json({cfg: this.cfg, includePassword: false}));
@@ -123,7 +123,7 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let ns = await this.Namespaces.load({namespace});
+  let ns = await this.Namespace.load({namespace});
   if (!ns) {
     return res.reportError('ResourceNotFound', 'No such namespace', {});
   }
@@ -163,7 +163,7 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await this.Namespaces.claim({
+  let newNamespace = await this.Namespace.claim({
     cfg: this.cfg,
     rabbitManager: this.rabbitManager,
     namespace,
