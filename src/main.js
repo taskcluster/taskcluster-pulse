@@ -63,7 +63,9 @@ let load = loader({
         monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
       });
 
+      console.log('hi');
       monitor.reportError(new Error('oh noes (test error)'));
+      console.log('bye');
 
       await ns.ensureTable(); //create the table
       return ns;
