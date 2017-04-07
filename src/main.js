@@ -12,6 +12,7 @@ let data              = require('./data');
 let RabbitAlerter     = require('./rabbitalerter');
 let RabbitManager     = require('./rabbitmanager');
 let RabbitMonitor     = require('./rabbitmonitor');
+let maintenance       = require('./maintenance');
 
 // Create component loader
 let load = loader({
@@ -113,13 +114,13 @@ let load = loader({
   },
 
   'expire-namespaces':{
-    requires: ['cfg', 'Namespace', 'monitor'],
-    setup: async ({cfg, Namespace, monitor}) => {
+    requires: ['cfg', 'Namespace', 'rabbitManager', 'monitor'],
+    setup: async ({cfg, Namespace, rabbitManager, monitor}) => {
       let now = taskcluster.fromNow(cfg.app.namespacesExpirationDelay);
 
       // Expire namespace entries using delay
-      debug('Expiring namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespace.expire(now);
+      debug('Expiring namespaces at: %s, from before %s', new Date(), now);
+      let count = await maintenance.expire({Namespace, cfg, rabbitManager, now});
       debug('Expired %s namespace entries', count);
 
       monitor.count('expire-namespaces.done');
@@ -131,12 +132,11 @@ let load = loader({
   'rotate-namespaces':{
     requires: ['cfg', 'Namespace', 'monitor', 'rabbitManager'],
     setup: async ({cfg, Namespace, monitor, rabbitManager}) => {
-      let now = taskcluster.fromNow(cfg.app.namespacesRotationDelay);
+      let now = new Date();
 
-      // rotate namespace username entries using delay
-      debug('Rotating namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespace.rotate(now, cfg, rabbitManager);
-      debug('Rotating %s namespace entries', count);
+      debug('Rotating namespaces');
+      let count = await maintenance.rotate({Namespace, now, cfg, rabbitManager});
+      debug('Rotated %s namespace entries', count);
 
       monitor.count('rotate-namespaces.done');
       monitor.stopResourceMonitoring();
