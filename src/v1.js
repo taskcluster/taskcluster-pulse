@@ -1,9 +1,8 @@
 let API = require('taskcluster-lib-api');
 let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
-let taskcluster = require('taskcluster-client');
-let slugid = require('slugid');
 let _ = require('lodash');
+let maintenance = require('./maintenance');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -19,7 +18,7 @@ let api = new API({
   context: [
     'cfg',
     'rabbitManager',
-    'Namespaces',
+    'Namespace',
   ],
   errorCodes: {
     InvalidNamespace: 400,
@@ -93,7 +92,7 @@ api.declare({
   }
 
   var retval = {};
-  var data = await this.Namespaces.scan({}, {limit, continuation});
+  var data = await this.Namespace.scan({}, {limit, continuation});
 
   retval.namespaces = data.entries.map(ns =>
     ns.json({cfg: this.cfg, includePassword: false}));
@@ -123,7 +122,7 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let ns = await this.Namespaces.load({namespace});
+  let ns = await this.Namespace.load({namespace}, true);
   if (!ns) {
     return res.reportError('ResourceNotFound', 'No such namespace', {});
   }
@@ -163,7 +162,8 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
-  let newNamespace = await this.Namespaces.claim({
+  let newNamespace = await maintenance.claim({
+    Namespace: this.Namespace,
     cfg: this.cfg,
     rabbitManager: this.rabbitManager,
     namespace,
@@ -171,6 +171,39 @@ api.declare({
     expires: new Date(req.body.expires),
   });
   res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
+});
+
+api.declare({
+  method:   'delete',
+  route:    '/namespace/:namespace',
+  name:     'deleteNamespace',
+  title:    'Delete a namespace',
+  stability: 'experimental',
+  scopes:   [
+    ['pulse:namespace:<namespace>'],
+  ],
+  description: [
+    'Immediately delete the given namespace.  This will delete all exchanges and queues which the',
+    'namespace had configure access to, as if it had just expired.',
+  ].join('\n'),
+}, async function(req, res) {
+  let {namespace} = req.params;
+
+  if (!isNamespaceValid(namespace, this.cfg)) {
+    return invalidNamespaceResponse(req, res, this.cfg);
+  }
+
+  let ns = await this.Namespace.load({namespace}, true);
+  if (ns) {
+    await maintenance.delete({
+      Namespace: this.Namespace,
+      rabbitManager: this.rabbitManager,
+      cfg: this.cfg,
+      namespace,
+    });
+  }
+
+  res.reply({});
 });
 
 /**

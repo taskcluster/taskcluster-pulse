@@ -53,7 +53,7 @@ let load = loader({
     }),
   },
 
-  Namespaces: {
+  Namespace: {
     requires: ['cfg', 'monitor'],
     setup: async ({cfg, monitor}) => {
       var ns = data.Namespace.setup({
@@ -69,9 +69,9 @@ let load = loader({
   },
 
   api: {
-    requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespaces'],
-    setup: ({cfg, monitor, validator, rabbitManager, Namespaces}) => v1.setup({
-      context:          {cfg, rabbitManager, Namespaces},
+    requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespace'],
+    setup: ({cfg, monitor, validator, rabbitManager, Namespace}) => v1.setup({
+      context:          {cfg, rabbitManager, Namespace},
       authBaseUrl:      cfg.taskcluster.authBaseUrl,
       publish:          process.env.NODE_ENV === 'production',
       baseUrl:          cfg.server.publicUrl + '/v1',
@@ -113,13 +113,13 @@ let load = loader({
   },
 
   'expire-namespaces':{
-    requires: ['cfg', 'Namespaces', 'monitor'],
-    setup: async ({cfg, Namespaces, monitor}) => {
+    requires: ['cfg', 'Namespace', 'monitor'],
+    setup: async ({cfg, Namespace, monitor}) => {
       let now = taskcluster.fromNow(cfg.app.namespacesExpirationDelay);
 
       // Expire namespace entries using delay
       debug('Expiring namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespaces.expire(now);
+      let count = await Namespace.expire(now);
       debug('Expired %s namespace entries', count);
 
       monitor.count('expire-namespaces.done');
@@ -129,13 +129,13 @@ let load = loader({
   },
 
   'rotate-namespaces':{
-    requires: ['cfg', 'Namespaces', 'monitor', 'rabbitManager'],
-    setup: async ({cfg, Namespaces, monitor, rabbitManager}) => {
+    requires: ['cfg', 'Namespace', 'monitor', 'rabbitManager'],
+    setup: async ({cfg, Namespace, monitor, rabbitManager}) => {
       let now = taskcluster.fromNow(cfg.app.namespacesRotationDelay);
 
       // rotate namespace username entries using delay
       debug('Rotating namespace entry at: %s, from before %s', new Date(), now);
-      let count = await Namespaces.rotate(now, cfg, rabbitManager);
+      let count = await Namespace.rotate(now, cfg, rabbitManager);
       debug('Rotating %s namespace entries', count);
 
       monitor.count('rotate-namespaces.done');

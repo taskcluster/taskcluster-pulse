@@ -155,11 +155,12 @@ suite('RabbitManager', function() {
   test('queues', async () => {
     await helper.rabbit.createQueue(queuenames[0]);
 
-    const queues = await helper.rabbit.queues();
+    let queues = await helper.rabbit.queues();
 
+    // at least one of these is the created queue
     assert(queues instanceof Array);
-    assert(queues.length === 1);
-    assert(queues[0].name === queuenames[0]);
+    queues = _.filter(queues, {name: queuenames[0]});
+    assert.equal(queues.length, 1);
   });
 
   test('createGetDeleteQueue', async () => {
