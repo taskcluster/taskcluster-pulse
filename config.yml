@@ -47,6 +47,12 @@ defaults:
     forceSSL:                 !env:bool FORCE_SSL
     trustProxy:               !env:bool TRUST_PROXY
 
+  # Administrative credentials for RabbitMQ.  These credentials must have the
+  # 'administrator' tag, and must have config and write permissions to all
+  # queues and exchanges matching app.userConfigPermission and
+  # app.userWritePermission, above.  RabbitMQ does limit administrators'
+  # control, so it is a good practice to limit the user to *only* those queues
+  # and exchanges if the RabbitMQ server is shared.
   rabbit:
     username:                 !env RABBIT_USERNAME
     password:                 !env RABBIT_PASSWORD
