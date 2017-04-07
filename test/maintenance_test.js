@@ -66,8 +66,12 @@ suite('Namespace', () => {
       await shouldFail(() => helper.rabbit.queue('queue/bar/def'));
       await helper.rabbit.exchange('exchange/notbar/events'); // not deleted!
       await shouldFail(() => helper.rabbit.exchange('exchange/bar/events'));
+
       ns = await Namespace.load({namespace: 'bar'}, true);
       assert.equal(ns, undefined);
+
+      helper.rabbit.deleteQueue('queue/notbar/abc');
+      helper.rabbit.deleteExchange('exchange/notbar/events');
     });
   });
 
