@@ -80,7 +80,10 @@ module.exports.claim = async function({Namespace, cfg, rabbitManager, namespace,
 module.exports.delete = async function({Namespace, rabbitManager, cfg, namespace}) {
   let debug = Debug('delete');
 
-  // use the configuration regexp to determine if an object is owned by this user
+  // use the configuration regexp to determine if an object is owned by this
+  // user, being careful to check that the namespace doesn't contain any funny
+  // charcters (this is checked when the namespace is created, too)
+  assert(namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace));
   let owned = new RegExp(cfg.app.userConfigPermission.replace(/{{namespace}}/g, namespace));
 
   // find the user's exchanges and queues
