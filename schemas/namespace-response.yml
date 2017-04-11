@@ -12,14 +12,12 @@ properties:
     description:    Date-time at which this namespace was first claimed.
     type:           string
     format:         date-time
-  username:
+  connectionString:
     type:           string
-    title:          Username
-    description:    The username created for authentication
-  password:
-    type:           string
-    title:          Password
-    description:    The password created for authentication
+    title:          AMQP URL
+    description:    |
+      The AMQP URL for connecting to the pulse service.  Note that this URL
+      contains a password, so it should not be logged or displayed to users.
   reclaimAt:
     description: |
       The caller should plan to call `claimNamespace` again at this time. The provided
@@ -42,7 +40,6 @@ properties:
 additionalProperties: false
 required:
   - namespace
-  - username
-  - password
   - contact
+  - connectionString
 

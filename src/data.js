@@ -52,6 +52,20 @@ let Namespace = Entity.configure({
   },
 });
 
+var buildConnectionString = ({username, password, hostname}) => {
+  // Construct connection string
+  return [
+    'amqps://',         // Ensure that we're using SSL
+    username,
+    ':',
+    password,
+    '@',
+    hostname,
+    ':',
+    5671,               // Port for SSL,
+  ].join('');
+};
+
 Namespace.prototype.json = function({cfg, includePassword}) {
   let rv = {
     namespace: this.namespace,
@@ -66,8 +80,11 @@ Namespace.prototype.json = function({cfg, includePassword}) {
     let rotationAfter = taskcluster.fromNow(cfg.app.namespaceRotationInterval, nextRotation);
     let reclaimAt = new Date(nextRotation.getTime() + (rotationAfter - nextRotation) / 2);
 
-    rv.username = this.username();
-    rv.password = this.password;
+    rv.connectionString = buildConnectionString({
+      username:this.username(),
+      password: this.password,
+      hostname: cfg.app.amqpHostname,
+    });
     rv.reclaimAt = reclaimAt.toJSON();
   }
 

@@ -170,6 +170,7 @@ api.declare({
     contact: req.body.contact,
     expires: new Date(req.body.expires),
   });
+  console.log(newNamespace.json({cfg: this.cfg, includePassword: true}));
   res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
 });
 
