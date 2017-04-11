@@ -374,6 +374,28 @@ class RabbitManager {
       method: 'post',
     });
   }
+
+  /** Get a list of all connections for a vhost.
+   *
+   * This provides information directly from the RabbitMQ API - see
+   * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
+   */
+  async connections(vhost='/') {
+    vhost = this.encode(vhost);
+    return await this.request(`vhosts/${vhost}/connections`);
+  }
+
+  /** Forcibly terminate a connection
+   */
+  async terminateConnection(name, reason) {
+    name = this.encode(name);
+    return await this.request(`connections/${name}`, {
+      method: 'delete',
+      headers: {
+        'X-Reason': reason,
+      },
+    });
+  }
 }
 
 module.exports = RabbitManager;

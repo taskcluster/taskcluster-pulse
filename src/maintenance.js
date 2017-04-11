@@ -86,6 +86,11 @@ module.exports.delete = async function({Namespace, rabbitManager, cfg, namespace
   assert(namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace));
   let owned = new RegExp(cfg.app.userConfigPermission.replace(/{{namespace}}/g, namespace));
 
+  let connections = await rabbitManager.connections(cfg.app.virtualhost);
+  let nsRegex = new RegExp(`${namespace}-[0-9]+`);
+  await Promise.all(connections.filter(c => nsRegex.test(c.user)).map(
+    conn => rabbitManager.terminateConnection(conn.name, 'Namespace deleted')));
+
   // find the user's exchanges and queues
   let exchanges = _.filter(await rabbitManager.exchanges(),
     e => e.vhost === cfg.app.virtualhost && owned.test(e.name));
