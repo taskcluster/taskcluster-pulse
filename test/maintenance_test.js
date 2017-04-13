@@ -39,7 +39,7 @@ suite('Namespace', () => {
         rabbitManager: helper.rabbit,
         cfg: helper.cfg,
         namespace: 'bar',
-        contact: {method: 'email', payload: {address: 'a@b.c'}},
+        contact: 'a@b.c',
         expires: taskcluster.fromNow('1 hours'),
       });
 
@@ -95,7 +95,7 @@ suite('Namespace', () => {
         rabbitManager: helper.rabbit,
         cfg: helper.cfg,
         namespace: 'e1',
-        contact: {method: 'email', payload: {address: 'a@b.c'}},
+        contact: 'a@b.c',
         expires: taskcluster.fromNow('-1 day'),
       });
 
@@ -104,7 +104,7 @@ suite('Namespace', () => {
         rabbitManager: helper.rabbit,
         cfg: helper.cfg,
         namespace: 'e2',
-        contact: {method: 'email', payload: {address: 'a@b.c'}},
+        contact: 'a@b.c',
         expires: taskcluster.fromNow('11 day'),
       });
 
@@ -158,7 +158,7 @@ suite('Namespace', () => {
         expires:  taskcluster.fromNow('1 hour'),
         rotationState: '1',
         nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: 'a@b.c',
       });
 
       await maintenance.rotate({
@@ -186,7 +186,7 @@ suite('Namespace', () => {
         expires:  taskcluster.fromNow('1 hour'),
         rotationState: '1',
         nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: 'a@b.c',
       });
 
       await Namespace.create({
@@ -197,7 +197,7 @@ suite('Namespace', () => {
         expires:  taskcluster.fromNow('1 hour'),
         rotationState: '2',
         nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: 'a@b.c',
       });
 
       await maintenance.rotate({
@@ -230,7 +230,7 @@ suite('Namespace', () => {
         expires:  taskcluster.fromNow('1 hour'),
         rotationState: '1',
         nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: 'a@b.c',
       });
 
       await Namespace.create({
@@ -241,7 +241,7 @@ suite('Namespace', () => {
         expires:  taskcluster.fromNow('1 hour'),
         rotationState: '2',
         nextRotation:  taskcluster.fromNow('1 day'),
-        contact:  {},
+        contact: 'a@b.c',
       });
 
       await maintenance.rotate({
@@ -273,7 +273,7 @@ suite('Namespace', () => {
         expires:  taskcluster.fromNow('1 hour'),
         rotationState: '1',
         nextRotation:  taskcluster.fromNow('- 1 day'),
-        contact:  {},
+        contact: 'a@b.c',
       });
 
       var assertRotationState = async (state) => {

@@ -34,43 +34,17 @@ suite('API', () => {
   }));
 
   suite('claimNamespace', function() {
-    test('email', () => {
+    test('success', () => {
       return helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
-      });
-    });
-
-    test('irc(user)', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sample', {
-        expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'irc',
-          payload: {user: 'test'},
-        },
-      });
-    });
-
-    test('irc(channel)', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sample', {
-        expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'irc',
-          payload: {channel: '#test'},
-        },
+        contact: 'a@a.com',
       });
     });
 
     test('char limit under', () => {
       return helper.pulse.claimNamespace('tcpulse-test-sampole', {
         expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
     });
 
@@ -78,10 +52,7 @@ suite('API', () => {
       const longname = 'tcpulse-test-samplenamespacesamplenamespacesamplenamespacesamplenamespace';
       return helper.pulse.claimNamespace(longname, {
         expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       }).then(function() {
         assert(false, 'This shouldn\'t have worked');
       }, function(err) {
@@ -92,10 +63,7 @@ suite('API', () => {
     test('char invalid symbols', () => {
       return helper.pulse.claimNamespace('tcpulse-test-%', {
         expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       }).then(function() {
         assert(false, 'This shouldn\'t have worked');
       }, function(err) {
@@ -107,17 +75,11 @@ suite('API', () => {
       let expires = taskcluster.fromNow('1 day');
       let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires,
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
       let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires,
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
       assert(_.isEqual(a, b));
     });
@@ -126,20 +88,14 @@ suite('API', () => {
       let expires = taskcluster.fromNow('1 day');
       let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires,
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
       assert(_.isEqual(new Date(a.expires), expires));
 
       expires = taskcluster.fromNow('2 days');
       let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires,
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
       assert(_.isEqual(new Date(b.expires), expires));
     });
@@ -148,30 +104,21 @@ suite('API', () => {
       let expires = taskcluster.fromNow('1 day');
       let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires,
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
 
       let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires,
-        contact: {
-          method: 'email',
-          payload: {address: 'newperson@a.com'},
-        },
+        contact: 'newperson@a.com',
       });
-      assert(b.contact.payload.address === 'newperson@a.com');
+      assert(b.contact === 'newperson@a.com');
     });
 
     test('entry creation', async () => {
       for (let i = 0; i < 10; i++) {
         await helper.pulse.claimNamespace('tcpulse-test-sample', {
           expires: taskcluster.fromNow('1 day'),
-          contact: {
-            method: 'email',
-            payload: {address: 'a@a.com'},
-          },
+          contact: 'a@a.com',
         });
       }
       let count = 0;
@@ -188,10 +135,7 @@ suite('API', () => {
     test('returns namespace', async () => {
       await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
 
       let res = await helper.pulse.namespace('tcpulse-test-sample');
@@ -203,10 +147,7 @@ suite('API', () => {
     test('deletes namespace', async () => {
       await helper.pulse.claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
-        contact: {
-          method: 'email',
-          payload: {address: 'a@a.com'},
-        },
+        contact: 'a@a.com',
       });
 
       await helper.pulse.deleteNamespace('tcpulse-test-sample');
@@ -231,10 +172,7 @@ suite('API', () => {
       await Promise.all(['foo', 'bar', 'bing', 'baz'].map(n => 
         helper.pulse.claimNamespace(`tcpulse-test-${n}`, {
           expires: taskcluster.fromNow('1 day'),
-          contact: {
-            method: 'irc',
-            payload: {channel: `#${n}`},
-          },
+          contact: 'a@a.com',
         })));
 
       // check that continuation tokens work correctly by getting two batches of two
