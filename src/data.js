@@ -41,14 +41,8 @@ let Namespace = Entity.configure({
     // password must renew before this time.
     nextRotation:   Entity.types.Date,
 
-    /**
-     * Contact object with properties
-     * -method
-     * -payload
-     *
-     * See JSON schema for documentation
-     */
-    contact:        Entity.types.JSON,
+    // contact email
+    contact:        Entity.types.String,
   },
 });
 

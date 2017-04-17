@@ -31,12 +31,12 @@ properties:
     type:       string
     format:     date-time
   contact:
-    type:           object
-    title:          Contact Information
-    description:    The contact information which will be handed off to the notification service  
-    oneOf:
-                    - {$ref: 'http://schemas.taskcluster.net/pulse/v1/irc-request.json#'}
-                    - {$ref: 'http://schemas.taskcluster.net/pulse/v1/email-request.json#'}
+    type:           string
+    format:         email
+    description: |
+      E-mail address that will reach people who can address problems with runaway queue length.
+      The service will send warning notifications to this address before forcibly deleting the
+      queue.
 additionalProperties: false
 required:
   - namespace
