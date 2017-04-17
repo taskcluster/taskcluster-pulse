@@ -27,6 +27,7 @@ defaults:
     # users.
     namespacePrefix: 'taskcluster-'
 
+    amqpHostname: !env TASKCLUSTER_AMQP_HOSTNAME
     amqpUrl: !env TASKCLUSTER_AMQP_URL
 
   aws:
@@ -83,6 +84,7 @@ production:
 test:
   app:
     amqpUrl: 'amqp://localhost'
+    amqpHostname: localhost
     namespacePrefix: 'tcpulse-test-'
     namespaceRotationInterval: '1 hour'
     virtualhost: /
