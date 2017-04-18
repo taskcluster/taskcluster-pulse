@@ -47,26 +47,6 @@ api.declare({
 });
 
 api.declare({
-  method:     'get',
-  route:      '/exchanges',
-  name:       'exchanges',
-  title:      'Rabbit Exchanges',
-  output:     'exchanges-response.json',
-  stability:  'experimental',
-  description: [
-    'Get a list of all exchanges in the rabbit cluster.  This will include exchanges',
-    'not managed by this service, if any exist.',
-  ].join('\n'),
-}, async function(req, res) {
-  res.reply(
-    _.map(
-      await this.rabbitManager.exchanges(),
-      elem => _.pick(elem, ['name', 'vhost', 'type', 'durable', 'auto_delete', 'internal', 'arguments'])
-    )
-  );
-});
-
-api.declare({
   method:         'get',
   route:          '/namespaces',
   name:           'listNamespaces',
