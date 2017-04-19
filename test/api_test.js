@@ -29,10 +29,6 @@ suite('API', () => {
     return helper.pulse.overview();
   }));
 
-  test('exchanges', helper.requiresRabbitMq(() => {
-    return helper.pulse.exchanges();
-  }));
-
   suite('claimNamespace', function() {
     test('success', () => {
       return helper.pulse.claimNamespace('tcpulse-test-sample', {
