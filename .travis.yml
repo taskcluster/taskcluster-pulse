@@ -1,8 +1,9 @@
 language: node_js
 sudo: required # We must use sudo here to have rabbitmq running :(
+dist: zesty # for a newer rabbtimq
 env:
   global:
-  - DEBUG='base:app:request,auth:*,server,test:*,pulse'
+  - DEBUG='*,-babel*,-mocha*,-eslint*'
   - CXX=g++-4.8
   - RABBIT_USERNAME=guest
   - RABBIT_PASSWORD=guest

@@ -5,7 +5,10 @@ suite('Namespace', () => {
   let load = require('../lib/main');
   let slugid = require('slugid');
   let maintenance = require('../lib/maintenance');
+  let amqplib = require('amqplib');
+  let Debug = require('debug');
 
+  let debug = Debug('maintenance-test');
   let Namespace;
 
   setup(async () => {
@@ -33,7 +36,7 @@ suite('Namespace', () => {
   // note that claim is adequately tested via api_test.js
 
   suite('delete namespace', function() {
-    test('delete namespace - namespace with queues and exchanges', async () => {
+    test('with queues and exchanges', async () => {
       let ns = await maintenance.claim({
         Namespace,
         rabbitManager: helper.rabbit,
@@ -72,6 +75,72 @@ suite('Namespace', () => {
 
       helper.rabbit.deleteQueue('queue/notbar/abc');
       helper.rabbit.deleteExchange('exchange/notbar/events');
+    });
+
+    test('delete namespace with open connections', async () => {
+      let ns = await maintenance.claim({
+        Namespace,
+        rabbitManager: helper.rabbit,
+        cfg: helper.cfg,
+        namespace: 'bar',
+        contact: 'a@b.c',
+        expires: taskcluster.fromNow('1 hours'),
+      });
+
+      let claimResult = ns.json({cfg: helper.cfg, includePassword: true});
+      let connectionString = claimResult.connectionString;
+      // adjust since for local testing we do not do amqps
+      connectionString = connectionString.replace('amqps', 'amqp').replace('5671', '5672');
+      let conn = await amqplib.connect(connectionString, {
+        noDelay: true,
+        timeout: 30 * 1000,
+      });
+      conn.on('close', function() {
+        debug('user amqp connection forcibly closed, as expected');
+      });
+
+      debug('creating some queues and exchanges');
+      let chan = await conn.createConfirmChannel();
+      await chan.assertExchange('exchange/bar/exch', 'topic', {durable: true, autoDelete: false});
+      await chan.assertQueue('queue/bar/queue1', {durable: true, autoDelete: false});
+      await chan.bindQueue('queue/bar/queue1', 'exchange/bar/exch', '#');
+      await chan.assertQueue('queue/bar/queue2', {exclusive: true, autoDelete: false});
+      await chan.bindQueue('queue/bar/queue2', 'exchange/bar/exch', '#');
+
+      // rabbitmq doesn't immediately register the new connection, so wait until it appears
+      debug('waiting for amqp connection to appear in management API');
+      let i = 50;
+      while (i--) {
+        let conns = await helper.rabbit.connections();
+        if (conns.length > 0) {
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      debug('AMQP connection has appeared');
+
+      // delete *while still connected*
+      debug('deleting namespace');
+      await maintenance.delete({
+        Namespace,
+        rabbitManager: helper.rabbit,
+        cfg: helper.cfg,
+        namespace: 'bar',
+      });
+
+      // make sure everything's gone
+      debug('checking for complete deletion');
+      await shouldFail(() => helper.rabbit.user('bar-1'));
+      await shouldFail(() => helper.rabbit.user('bar-2'));
+      await shouldFail(() => helper.rabbit.queue('queue/bar/queue1'));
+      await shouldFail(() => helper.rabbit.queue('queue/bar/queue2'));
+      await shouldFail(() => helper.rabbit.exchange('exchange/bar/exch'));
+
+      // make sure further operations as the user don't work
+      await shouldFail(() => chan.assertExchange('exchange/bar/exch', 'topic', {durable: true, autoDelete: false}));
+
+      ns = await Namespace.load({namespace: 'bar'}, true);
+      assert.equal(ns, undefined);
     });
   });
 
