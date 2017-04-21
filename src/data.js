@@ -41,7 +41,7 @@ let Namespace = Entity.configure({
     // password must renew before this time.
     nextRotation:   Entity.types.Date,
 
-    // contact email
+    // contact email, or empty string for no warning
     contact:        Entity.types.String,
   },
 });
@@ -65,7 +65,7 @@ Namespace.prototype.json = function({cfg, includePassword}) {
     namespace: this.namespace,
     created: this.created.toJSON(),
     expires: this.expires.toJSON(),
-    contact: this.contact,
+    contact: this.contact.length > 0 ? this.contact : undefined,
   };
   if (includePassword) {
     // calculate the reclaimAt as half the rotation interval past the

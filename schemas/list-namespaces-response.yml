@@ -36,13 +36,12 @@ properties:
           description: |
             E-mail address that will reach people who can address problems with runaway queue length.
             The service will send warning notifications to this address before forcibly deleting the
-            queue.
+            queue.  If omitted, no warnings will be given.
       additionalProperties: false
       required:
         - namespace
         - created
         - expires
-        - contact
   continuationToken:
     title:                "Continuation Token"
     type:                 string

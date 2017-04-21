@@ -37,6 +37,23 @@ suite('API', () => {
       });
     });
 
+    test('success, no contact', () => {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+        expires: taskcluster.fromNow('1 day'),
+      });
+    });
+
+    test('success, no expires', () => {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+        contact: 'a@a.com',
+      });
+    });
+
+    test('success, no payload keys', () => {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+      });
+    });
+
     test('char limit under', () => {
       return helper.pulse.claimNamespace('tcpulse-test-sampole', {
         expires: taskcluster.fromNow('1 day'),
@@ -136,29 +153,6 @@ suite('API', () => {
 
       let res = await helper.pulse.namespace('tcpulse-test-sample');
       assert.equal(res.namespace, 'tcpulse-test-sample');
-    });
-  });
-
-  suite('deleteNamespace', function() {
-    test('deletes namespace', async () => {
-      await helper.pulse.claimNamespace('tcpulse-test-sample', {
-        expires: taskcluster.fromNow('1 day'),
-        contact: 'a@a.com',
-      });
-
-      await helper.pulse.deleteNamespace('tcpulse-test-sample');
-
-      let got404 = false;
-      try {
-        await helper.pulse.namespace('tcpulse-test-sample');
-      } catch (err) {
-        if (err.statusCode === 404) {
-          got404 = true;
-        } else {
-          throw err;
-        }
-      }
-      assert(got404);
     });
   });
 
