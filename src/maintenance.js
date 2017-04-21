@@ -77,49 +77,9 @@ module.exports.claim = async function({Namespace, cfg, rabbitManager, namespace,
   return newNamespace;
 };
 
-module.exports.delete = async function({Namespace, rabbitManager, cfg, namespace}) {
-  let debug = Debug('delete');
-
-  // use the configuration regexp to determine if an object is owned by this
-  // user, being careful to check that the namespace doesn't contain any funny
-  // charcters (this is checked when the namespace is created, too)
-  assert(namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace));
-  let owned = new RegExp(cfg.app.userConfigPermission.replace(/{{namespace}}/g, namespace));
-
-  let connections = await rabbitManager.connections(cfg.app.virtualhost);
-  let nsRegex = new RegExp(`${namespace}-[0-9]+`);
-  await Promise.all(connections.filter(c => nsRegex.test(c.user)).map(
-    conn => rabbitManager.terminateConnection(conn.name, 'Namespace deleted')));
-
-  // find the user's exchanges and queues
-  let exchanges = _.filter(await rabbitManager.exchanges(),
-    e => e.vhost === cfg.app.virtualhost && owned.test(e.name));
-  let queues = _.filter(await rabbitManager.queues(),
-    q => q.vhost === cfg.app.virtualhost && owned.test(q.name));
-
-  // delete sequentually to avoid overloading the rabbitmq server
-  for (let i = 0; i < exchanges.length; i++) {
-    let name = exchanges[i].name;
-    debug(`deleting exchange ${name}`);
-    await rabbitManager.deleteExchange(name, cfg.app.virtualhost);
-  }
-  for (let i = 0; i < queues.length; i++) {
-    let name = queues[i].name;
-    debug(`deleting queue ${name}`);
-    await rabbitManager.deleteQueue(name, cfg.app.virtualhost);
-  }
-
-  // try to delete both users
-  await rabbitManager.deleteUser(`${namespace}-1`, cfg.app.virtualhost);
-  await rabbitManager.deleteUser(`${namespace}-2`, cfg.app.virtualhost);
-
-  // finally, delete the table row
-  Namespace.remove({namespace});
-};
-
 module.exports.expire = async function({Namespace, cfg, rabbitManager, now}) {
   let count = 0;
-  let debug = Debug('expire');
+  let debug = Debug('maintenance.expire');
 
   await Namespace.scan({
     expires: Namespace.op.lessThan(now),
@@ -128,7 +88,15 @@ module.exports.expire = async function({Namespace, cfg, rabbitManager, now}) {
     handler:          async (ns) => {
       count++;
       debug(`deleting expired namespace ${ns.namespace}`);
-      await module.exports.delete({Namespace, rabbitManager, cfg, namespace: ns.namespace});
+
+      // delete both users. NOTE: this does not terminate any active
+      // connections these users may have!  Connection termination is left to
+      // the RabbitMonitor.
+      await rabbitManager.deleteUser(`${ns.namespace}-1`, cfg.app.virtualhost);
+      await rabbitManager.deleteUser(`${ns.namespace}-2`, cfg.app.virtualhost);
+
+      // finally, delete the table row
+      await Namespace.remove({namespace: ns.namespace});
     },
   });
   return count;
@@ -136,7 +104,7 @@ module.exports.expire = async function({Namespace, cfg, rabbitManager, now}) {
 
 module.exports.rotate = async function({Namespace, now, cfg, rabbitManager}) {
   let count = 0;
-  let debug = Debug('rotate');
+  let debug = Debug('maintenance.rotate');
 
   await Namespace.scan({
     nextRotation: Namespace.op.lessThan(now),

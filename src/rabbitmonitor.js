@@ -37,6 +37,39 @@ class RabbitMonitor {
     this.queuePrefix = '/queue/' + namespacePrefix;
   }
 
+  // useful code for deleting connections, queues, exchanges for a namespace - copied here
+  // when this functionality was removed from the API
+  async usefulStuff() {
+    // use the configuration regexp to determine if an object is owned by this
+    // user, being careful to check that the namespace doesn't contain any funny
+    // charcters (this is checked when the namespace is created, too)
+    assert(namespace.length <= 64 && /^[A-Za-z0-9_-]+$/.test(namespace));
+    let owned = new RegExp(cfg.app.userConfigPermission.replace(/{{namespace}}/g, namespace));
+
+    let connections = await rabbitManager.connections(cfg.app.virtualhost);
+    let nsRegex = new RegExp(`${namespace}-[0-9]+`);
+    await Promise.all(connections.filter(c => nsRegex.test(c.user)).map(
+      conn => rabbitManager.terminateConnection(conn.name, 'Namespace deleted')));
+
+    // find the user's exchanges and queues
+    let exchanges = _.filter(await rabbitManager.exchanges(),
+      e => e.vhost === cfg.app.virtualhost && owned.test(e.name));
+    let queues = _.filter(await rabbitManager.queues(),
+      q => q.vhost === cfg.app.virtualhost && owned.test(q.name));
+
+    // delete sequentually to avoid overloading the rabbitmq server
+    for (let i = 0; i < exchanges.length; i++) {
+      let name = exchanges[i].name;
+      debug(`deleting exchange ${name}`);
+      await rabbitManager.deleteExchange(name, cfg.app.virtualhost);
+    }
+    for (let i = 0; i < queues.length; i++) {
+      let name = queues[i].name;
+      debug(`deleting queue ${name}`);
+      await rabbitManager.deleteQueue(name, cfg.app.virtualhost);
+    }
+  }
+
   /**
    *  Start the monitor.
    *  @param {boolean} verbose   - Enable to log queue statistics in real time
