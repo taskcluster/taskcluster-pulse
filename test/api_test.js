@@ -139,29 +139,6 @@ suite('API', () => {
     });
   });
 
-  suite('deleteNamespace', function() {
-    test('deletes namespace', async () => {
-      await helper.pulse.claimNamespace('tcpulse-test-sample', {
-        expires: taskcluster.fromNow('1 day'),
-        contact: 'a@a.com',
-      });
-
-      await helper.pulse.deleteNamespace('tcpulse-test-sample');
-
-      let got404 = false;
-      try {
-        await helper.pulse.namespace('tcpulse-test-sample');
-      } catch (err) {
-        if (err.statusCode === 404) {
-          got404 = true;
-        } else {
-          throw err;
-        }
-      }
-      assert(got404);
-    });
-  });
-
   suite('listNamespaces', function() {
     test('returns namespaces', async () => {
       // create a bunch of namespaces
