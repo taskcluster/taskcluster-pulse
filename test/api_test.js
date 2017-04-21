@@ -37,6 +37,23 @@ suite('API', () => {
       });
     });
 
+    test('success, no contact', () => {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+        expires: taskcluster.fromNow('1 day'),
+      });
+    });
+
+    test('success, no expires', () => {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+        contact: 'a@a.com',
+      });
+    });
+
+    test('success, no payload keys', () => {
+      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+      });
+    });
+
     test('char limit under', () => {
       return helper.pulse.claimNamespace('tcpulse-test-sampole', {
         expires: taskcluster.fromNow('1 day'),

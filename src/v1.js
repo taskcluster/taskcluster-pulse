@@ -3,6 +3,7 @@ let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
 let _ = require('lodash');
 let maintenance = require('./maintenance');
+let taskcluster = require('taskcluster-client');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -142,13 +143,15 @@ api.declare({
     return invalidNamespaceResponse(req, res, this.cfg);
   }
 
+  let expires = req.body.expires ? new Date(req.body.expires) : taskcluster.fromNow('4 hours');
+  let contact = req.body.contact || '';
   let newNamespace = await maintenance.claim({
     Namespace: this.Namespace,
     cfg: this.cfg,
     rabbitManager: this.rabbitManager,
     namespace,
-    contact: req.body.contact,
-    expires: new Date(req.body.expires),
+    contact,
+    expires,
   });
   res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
 });
