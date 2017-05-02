@@ -2,9 +2,10 @@ defaults:
   # Application specific configuration keys
   app:
     # Prefix for exchanges, should always be v1/
-    exchangePrefix: v1/
     namespaceTableName: 'PulseNamespaces'
     namespacesExpirationDelay: '- 1 hour'
+    rabbitQueueTableName: 'PulseRabbitQueues'
+    rabbitQueueExpirationDelay: '- 24 hours' # This means we re-send alerts at most once a day
 
     # namespaces are rotated at this time interval.
     namespaceRotationInterval: '1 hour'
@@ -14,6 +15,8 @@ defaults:
 
     # permissions to give to users; {{namespace}} is replaced by the namespace.  Note that
     # when users are deleted, anything that user had permission to configure is also deleted!
+    # Note that the queue/ and exchange/ conventions are used in monitor config below as well.
+    # If you change them, update that config as well.
     userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
@@ -29,6 +32,8 @@ defaults:
 
     amqpHostname: !env TASKCLUSTER_AMQP_HOSTNAME
     amqpUrl: !env TASKCLUSTER_AMQP_URL
+    amqpProtocol: !env TASKCLUSTER_AMQP_PROTOCOL
+    amqpPort: !env TASKCLUSTER_AMQP_PORT
 
   aws:
     accessKeyId:      !env AWS_ACCESS_KEY_ID
@@ -62,24 +67,30 @@ defaults:
   azure:
     account:                  !env AZURE_ACCOUNT_NAME
 
-  stressor:
-    payloadSize:              !env STRESSOR_PAYLOAD_SIZE
-    uploadRate:               !env STRESSOR_UPLOAD_RATE
-    messageCount:             !env STRESSOR_MESSAGE_COUNT
-    targetQueue:              !env STRESSOR_TARGET_QUEUE
-
   monitor:
-    refreshInterval:              !env MONITOR_REFRESH_INTERVAL
+    alertThreshold:           !env MONITOR_ALERT_THRESHOLD
+    deleteThreshold:          !env MONITOR_DELETE_THRESHOLD
+    queuePrefix:              'queue/'
+    exchangePrefix:           'exchange/'
+    connectionMaxLifetime:    '- 72 hours'
 
   alerter:
     messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE
     messagePublishRateTolerance:  !env ALERTER_MESSAGE_PUBLISH_RATE_TOLERANCE
 
 production:
+  app:
+    amqpProtocol: 'amqps://' # Ensure that we're using SSL
+    amqpPort: 5671 # SSL port
+
   server:
     forceSSL:                 true
     trustProxy:               true
     env:                      'production'
+
+  monitor:
+    alertThreshold:           4000
+    deleteThreshold:          8000
 
 test:
   app:
@@ -91,17 +102,13 @@ test:
     userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
+    amqpProtocol: 'amqp://'
+    amqpPort: 5672 # Non SSL port
 
   taskcluster:
     credentials:
       clientId:       'test-client'
       accessToken:    'none'
-
-  stressor:
-    payloadSize: 20
-    uploadRate: 50
-    messageCount: 5
-    targetQueue: 'stressor queue'
 
   server:
     publicUrl:        http://localhost:60403
@@ -114,9 +121,5 @@ test:
     account:  "inMemory"
 
   monitor:
-    refreshInterval: 1000
-    queuePrefix: 'taskcluster/'
-
-  alerter:
-    messageCountTolerance: 10
-    messagePublishRateTolerance: 5
+    alertThreshold:           4
+    deleteThreshold:          8

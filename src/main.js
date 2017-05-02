@@ -9,9 +9,7 @@ let _                 = require('lodash');
 let v1                = require('./v1');
 let taskcluster       = require('taskcluster-client');
 let data              = require('./data');
-let RabbitAlerter     = require('./rabbitalerter');
 let RabbitManager     = require('./rabbitmanager');
-let RabbitMonitor     = require('./rabbitmonitor');
 let maintenance       = require('./maintenance');
 
 // Create component loader
@@ -69,6 +67,21 @@ let load = loader({
     },
   },
 
+  RabbitQueue: {
+    requires: ['cfg', 'monitor'],
+    setup: async ({cfg, monitor}) => {
+      var rq = data.RabbitQueue.setup({
+        account: cfg.azure.account,
+        table: cfg.app.rabbitQueueTableName,
+        credentials: cfg.taskcluster.credentials,
+        monitor: monitor.prefix(cfg.app.rabbitQueueTableName.toLowerCase()),
+      });
+
+      await rq.ensureTable(); //create the table
+      return rq;
+    },
+  },
+
   api: {
     requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespace'],
     setup: ({cfg, monitor, validator, rabbitManager, Namespace}) => v1.setup({
@@ -83,33 +96,26 @@ let load = loader({
     }),
   },
 
-  rabbitAlerter: {
-    requires: ['cfg'],
-    setup: ({cfg}) => new RabbitAlerter(cfg.alerter, cfg.taskcluster.credentials),
-  },
-
   rabbitManager: {
     requires: ['cfg'],
     setup: ({cfg}) => new RabbitManager(cfg.rabbit),
   },
 
-  rabbitMonitor: {
-    requires: ['cfg', 'rabbitAlerter', 'rabbitManager'],
-    setup: ({cfg, rabbitAlerter, rabbitManager}) => {
-      // create an API client for the tc-pulse web service
-      const reference = v1.reference({baseUrl: cfg.server.publicUrl + '/v1'});
-      const Pulse = taskcluster.createClient(reference);
-      const pulseClient = new Pulse({
-        credentials: cfg.taskcluster.credentials,
+  'monitor-rabbit': {
+    requires: ['cfg', 'monitor', 'rabbitManager', 'Namespace', 'RabbitQueue'],
+    setup: async ({cfg, monitor, rabbitManager, Namespace, RabbitQueue}) => {
+      debug('Begin an interation of rabbit monitoring');
+      await maintenance.monitor({
+        cfg,
+        manager: rabbitManager,
+        Namespace,
+        RabbitQueue,
+        notify: new taskcluster.Notify(cfg.taskcluster),
       });
-
-      return new RabbitMonitor(
-        cfg.monitor.refreshInterval,
-        cfg.app.namespacePrefix,
-        cfg.app.amqpUrl,
-        rabbitAlerter,
-        rabbitManager,
-        pulseClient);
+      debug('Finish an interation of rabbit monitoring');
+      monitor.count('monitor-rabbit.done');
+      monitor.stopResourceMonitoring();
+      await monitor.flush();
     },
   },
 
@@ -153,11 +159,6 @@ let load = loader({
       pulseApp.use('/v1', api);
       return pulseApp.createServer();
     },
-  },
-
-  'run-monitor': {
-    requires: ['rabbitMonitor'],
-    setup: ({rabbitMonitor}) => rabbitMonitor.run(true),
   },
 }, ['profile', 'process']);
 

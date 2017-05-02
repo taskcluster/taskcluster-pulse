@@ -46,17 +46,17 @@ let Namespace = Entity.configure({
   },
 });
 
-var buildConnectionString = ({username, password, hostname}) => {
+var buildConnectionString = ({username, password, hostname, protocol, port}) => {
   // Construct connection string
   return [
-    'amqps://',         // Ensure that we're using SSL
+    protocol,
     username,
     ':',
     password,
     '@',
     hostname,
     ':',
-    5671,               // Port for SSL,
+    port,
   ].join('');
 };
 
@@ -75,9 +75,11 @@ Namespace.prototype.json = function({cfg, includePassword}) {
     let reclaimAt = new Date(nextRotation.getTime() + (rotationAfter - nextRotation) / 2);
 
     rv.connectionString = buildConnectionString({
-      username:this.username(),
+      username: this.username(),
       password: this.password,
       hostname: cfg.app.amqpHostname,
+      protocol: cfg.app.amqpProtocol,
+      port: cfg.app.amqpPort,
     });
     rv.reclaimAt = reclaimAt.toJSON();
   }
@@ -89,5 +91,23 @@ Namespace.prototype.username = function() {
   return `${this.namespace}-${this.rotationState}`;
 };
 
-module.exports = {Namespace};
+/**
+ * Entity for keeping track of various queue state
+ *
+ * This *must not* be used to keep a clone of any information
+ * that can be grabbed from rabbit directly. This is for
+ * taskcluster specific metadata.
+ */
+let RabbitQueue = Entity.configure({
+  version:          1,
+  partitionKey:     Entity.keys.StringKey('name'),
+  rowKey:           Entity.keys.ConstantKey('name'),
+  properties: {
+    name:      Entity.types.String,
+    state:     Entity.types.String,
+    updated:   Entity.types.Date,
+  },
+});
+
+module.exports = {RabbitQueue, Namespace};
 

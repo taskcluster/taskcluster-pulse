@@ -725,7 +725,7 @@ block-stream@*:
   dependencies:
     inherits "~2.0.0"
 
-bluebird@^3.3, bluebird@^3.4.1, bluebird@^3.4.6:
+bluebird@^3.4.1, bluebird@^3.4.6, bluebird@^3.5.0:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.0.tgz#791420d7f551eea2897453a8a77653f96606d67c"
 
@@ -2113,7 +2113,7 @@ lodash@^3.10.1, lodash@^3.6.0:
   version "3.10.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
 
-lodash@^4.0.0, lodash@^4.11.1, lodash@^4.13.1, lodash@^4.14.0, lodash@^4.15.0, lodash@^4.17.4, lodash@^4.2.0, lodash@^4.3.0, lodash@^4.5.1, lodash@^4.6.1:
+lodash@^4.0.0, lodash@^4.11.1, lodash@^4.13.1, lodash@^4.14.0, lodash@^4.15.0, lodash@^4.17.4, lodash@^4.2.0, lodash@^4.3.0, lodash@^4.5.1:
   version "4.17.4"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.4.tgz#78203a4d1c328ae1d86dca6460e369b57f4055ae"
 
@@ -2729,14 +2729,6 @@ request-promise-core@1.1.1:
   dependencies:
     lodash "^4.13.1"
 
-request-promise@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/request-promise/-/request-promise-3.0.0.tgz#be1edb26f41c49cd1d5656c6753d6842a1249f46"
-  dependencies:
-    bluebird "^3.3"
-    lodash "^4.6.1"
-    request "^2.34"
-
 request-promise@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/request-promise/-/request-promise-4.1.1.tgz#26021e4f6f56fd4c309f6bf1ebd8c97a95ac1fb5"
@@ -2745,7 +2737,7 @@ request-promise@^4.1.1:
     request-promise-core "1.1.1"
     stealthy-require "^1.0.0"
 
-request@^2.34, request@^2.73.0, request@^2.75.0, request@^2.79.0:
+request@^2.75.0, request@^2.79.0:
   version "2.80.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.80.0.tgz#8cc162d76d79381cdefdd3505d76b80b60589bd0"
   dependencies:
@@ -3282,17 +3274,6 @@ taskcluster-lib-docs@^3.3.0:
     s3-upload-stream "^1.0.7"
     tar-stream "^1.5.2"
     taskcluster-client "^1.0.1"
-
-taskcluster-lib-iterate@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/taskcluster-lib-iterate/-/taskcluster-lib-iterate-1.0.2.tgz#d17cb271153eeb529aa4de755d4ac331c5bb5748"
-  dependencies:
-    babel-runtime "^6.9.2"
-    bluebird "^3.4.1"
-    debug "^2.2.0"
-    lodash "^4.13.1"
-    request "^2.73.0"
-    request-promise "^3.0.0"
 
 taskcluster-lib-loader@^1.0.0:
   version "1.1.0"

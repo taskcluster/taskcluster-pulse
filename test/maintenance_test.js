@@ -1,12 +1,15 @@
 suite('Namespace', () => {
+  let _ = require('lodash');
   let assert = require('assert');
   let taskcluster = require('taskcluster-client');
+  let testing = require('taskcluster-lib-testing');
   let helper = require('./helper');
   let load = require('../lib/main');
   let slugid = require('slugid');
   let maintenance = require('../lib/maintenance');
-  let amqplib = require('amqplib');
   let Debug = require('debug');
+  let amqp = require('amqplib');
+  let sinon = require('sinon');
 
   let debug = Debug('maintenance-test');
   let Namespace;
@@ -263,6 +266,73 @@ suite('Namespace', () => {
         rabbitManager: helper.rabbit,
       });
       await assertRotationState('2');
+    });
+  });
+
+  suite('monitoring', async () => {
+
+    if (!helper.haveRabbitMq) {
+      this.pending = true;
+    }
+
+    test('basic', async () => {
+      let exchangeName = 'exchange/tcpulse-test-m/foo';
+      let queueName = 'queue/tcpulse-test-m/bar';
+      let ns = await helper.pulse.claimNamespace('tcpulse-test-m', {
+        expires: taskcluster.fromNow('1 day'),
+        contact: 'a@a.com',
+      });
+      let connection = await amqp.connect(ns.connectionString);
+      let channel = await connection.createChannel();
+
+      await channel.assertExchange(exchangeName, 'topic');
+      await channel.assertQueue(queueName);
+      await channel.purgeQueue(queueName);
+      await testing.poll(async () => {
+        debug('clearing monitor testing queue');
+        let res = await helper.rabbit.queue(queueName);
+        assert.equal(res.messages, 0);
+      });
+      await channel.bindQueue(queueName, exchangeName, '#');
+
+      let notify = {
+        email: sinon.spy(),
+      };
+
+      _.times(25, () => channel.publish(exchangeName, 'bar', new Buffer('baz')));
+
+      await maintenance.monitor({
+        cfg: helper.cfg,
+        manager: helper.rabbit,
+        Namespace: helper.Namespace,
+        RabbitQueue: helper.RabbitQueue,
+        notify,
+      });
+
+      await testing.sleep(5000);
+
+      await maintenance.monitor({
+        cfg: helper.cfg,
+        manager: helper.rabbit,
+        Namespace: helper.Namespace,
+        RabbitQueue: helper.RabbitQueue,
+        notify,
+      });
+
+      await maintenance.monitor({
+        cfg: helper.cfg,
+        manager: helper.rabbit,
+        Namespace: helper.Namespace,
+        RabbitQueue: helper.RabbitQueue,
+        notify,
+      });
+
+      // TODO: Assert that the queue is deleted
+      return assert(notify.email.calledOnce);
+    });
+
+    test('does not mess with non-managed queues', async () => {
+      // TODO: WRITE THIS
     });
   });
 });
