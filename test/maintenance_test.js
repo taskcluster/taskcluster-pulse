@@ -269,70 +269,179 @@ suite('Namespace', () => {
     });
   });
 
-  suite('monitoring', async () => {
+  suite('monitoring queues', async () => {
 
     if (!helper.haveRabbitMq) {
       this.pending = true;
     }
 
-    test('basic', async () => {
-      let exchangeName = 'exchange/tcpulse-test-m/foo';
-      let queueName = 'queue/tcpulse-test-m/bar';
+    let connection, channel, exchangeName, queueName;
+
+    let fillQueue = async (number) => {
+      debug('adding ' + number + ' messages to the testing queue');
+      _.times(number, () => channel.publish(exchangeName, 'bar', new Buffer('baz')));
+      let baseline = (await helper.rabbit.queue(queueName)).messages;
+      await testing.poll(async () => {
+        debug('filling monitor testing queue');
+        let res = await helper.rabbit.queue(queueName);
+        assert.equal(res.messages, baseline + number);
+      }, 64);
+    };
+
+    setup(async () => {
+      exchangeName = 'exchange/tcpulse-test-m/foo';
+      queueName = 'queue/tcpulse-test-m/bar';
       let ns = await helper.pulse.claimNamespace('tcpulse-test-m', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
-      let connection = await amqp.connect(ns.connectionString);
-      let channel = await connection.createChannel();
-
+      connection = await amqp.connect(ns.connectionString);
+      channel = await connection.createChannel();
       await channel.assertExchange(exchangeName, 'topic');
+    });
+
+    teardown(async () => {
+      await connection.close();
+    });
+
+    test('basic', async () => {
+
+      // Set up a queue that shouldn't be managed by the service
+      let safeQueueName = 'beeblebrox';
+      await helper.rabbit.createQueue(safeQueueName);
+      if ((await helper.rabbit.queue(safeQueueName)).messages < 50) {
+        _.times(50, () => helper.write(safeQueueName, 'baz'));
+        await testing.poll(async () => {
+          debug('filling monitor testing safe queue');
+          let res = await helper.rabbit.queue(safeQueueName);
+          assert.equal(res.messages, 0);
+        }, 64);
+      }
+
+      // Now set up the queue that should be managed
       await channel.assertQueue(queueName);
       await channel.purgeQueue(queueName);
       await testing.poll(async () => {
         debug('clearing monitor testing queue');
         let res = await helper.rabbit.queue(queueName);
         assert.equal(res.messages, 0);
-      });
+      }, 64);
       await channel.bindQueue(queueName, exchangeName, '#');
 
       let notify = {
         email: sinon.spy(),
       };
 
-      _.times(25, () => channel.publish(exchangeName, 'bar', new Buffer('baz')));
+      let monitorIteration = async () => {
+        await maintenance.monitor({
+          cfg: helper.cfg,
+          manager: helper.rabbit,
+          Namespace: helper.Namespace,
+          RabbitQueue: helper.RabbitQueue,
+          notify,
+        });
+      };
+
+      debug('On empty queue, we should not alert');
+      await monitorIteration();
+      assert.equal(notify.email.callCount, 0);
+      await helper.rabbit.queue(queueName);
+
+      debug('Below alert threshold, we should not alert');
+      await fillQueue(3);
+      await monitorIteration();
+      assert.equal(notify.email.callCount, 0);
+      await helper.rabbit.queue(queueName);
+
+      debug('Above alert threshold, we should alert');
+      await fillQueue(3);
+      await monitorIteration();
+      assert.equal(notify.email.callCount, 1);
+      await helper.rabbit.queue(queueName);
+
+      debug('Above delete threshold, we should delete');
+      await fillQueue(10);
+      await monitorIteration();
+      return await helper.rabbit.queue(queueName).then(() => {
+        assert(false, 'This queue should have been deleted!');
+      }).catch(async err => {
+        assert(err.statusCode === 404, 'Queue should not be found');
+        assert(notify.email.callCount, 2);
+        await helper.rabbit.queue(safeQueueName); // This should not have been deleted
+      });
+    });
+  });
+
+  suite('monitoring other', async () => {
+    test('connections', async () => {
+      // ensure there's a connection we shouldn't mess with
+      let unmanagedConnection = await amqp.connect(helper.cfg.app.amqpUrl);
+
+      // setup a connection we _should_ kill
+      let ns2 = await helper.pulse.claimNamespace('tcpulse-test-m2', {
+        expires: taskcluster.fromNow('1 day'),
+        contact: 'a@a.com',
+      });
+      let dyingConnection = await amqp.connect(ns2.connectionString);
+
+      // To get us over the kill threshold
+      await testing.sleep(2000);
+
+      // setup a connection we _should not_ kill
+      let ns1 = await helper.pulse.claimNamespace('tcpulse-test-m1', {
+        expires: taskcluster.fromNow('1 day'),
+        contact: 'a@a.com',
+      });
+      let managedConnection = await amqp.connect(ns1.connectionString);
+
+      let connectedUsers = _.map(await helper.rabbit.connections(), 'user');
+      assert(_.includes(connectedUsers, 'guest'));
+      assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
+      assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
 
       await maintenance.monitor({
-        cfg: helper.cfg,
+        cfg: _.defaults({monitor: {connectionMaxLifetime: '-1 seconds'}}, helper.cfg),
         manager: helper.rabbit,
         Namespace: helper.Namespace,
         RabbitQueue: helper.RabbitQueue,
-        notify,
+        notify: {email: sinon.spy()},
       });
 
-      await testing.sleep(5000);
-
-      await maintenance.monitor({
-        cfg: helper.cfg,
-        manager: helper.rabbit,
-        Namespace: helper.Namespace,
-        RabbitQueue: helper.RabbitQueue,
-        notify,
-      });
-
-      await maintenance.monitor({
-        cfg: helper.cfg,
-        manager: helper.rabbit,
-        Namespace: helper.Namespace,
-        RabbitQueue: helper.RabbitQueue,
-        notify,
-      });
-
-      // TODO: Assert that the queue is deleted
-      return assert(notify.email.calledOnce);
+      connectedUsers = _.map(await helper.rabbit.connections(), 'user');
+      assert(_.includes(connectedUsers, 'guest'));
+      assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
+      assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
     });
 
-    test('does not mess with non-managed queues', async () => {
-      // TODO: WRITE THIS
+    test('exchanges', async () => {
+      let exchangeName = 'exchange/tcpulse-test-n/bar';
+      let ns = await helper.pulse.claimNamespace('tcpulse-test-n', {
+        expires: taskcluster.fromNow('-1 day'),
+        contact: 'a@a.com',
+      });
+      let connection = await amqp.connect(ns.connectionString);
+      let channel = await connection.createChannel();
+      await channel.assertExchange(exchangeName, 'topic');
+
+      let exchanges = _.map(await helper.rabbit.exchanges(), 'name');
+      assert(_.includes(exchanges, exchangeName));
+
+      await maintenance.expire({
+        Namespace: helper.Namespace,
+        now: taskcluster.fromNow('0 hours'),
+        cfg: helper.cfg,
+        rabbitManager: helper.rabbit,
+      });
+      await maintenance.monitor({
+        cfg: helper.cfg,
+        manager: helper.rabbit,
+        Namespace: helper.Namespace,
+        RabbitQueue: helper.RabbitQueue,
+        notify: {email: sinon.spy()},
+      });
+
+      exchanges = _.map(await helper.rabbit.exchanges(), 'name');
+      assert(!_.includes(exchanges, exchangeName));
     });
   });
 });

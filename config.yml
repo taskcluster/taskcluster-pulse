@@ -68,11 +68,16 @@ defaults:
     account:                  !env AZURE_ACCOUNT_NAME
 
   monitor:
-    alertThreshold:           !env MONITOR_ALERT_THRESHOLD
-    deleteThreshold:          !env MONITOR_DELETE_THRESHOLD
-    queuePrefix:              'queue/'
-    exchangePrefix:           'exchange/'
-    connectionMaxLifetime:    '- 72 hours'
+    alertThreshold:           !env MONITOR_ALERT_THRESHOLD # Number of messages in queue before alert
+    deleteThreshold:          !env MONITOR_DELETE_THRESHOLD # Number of messages in queue before delete
+    queuePrefix:              'queue/' # Prefix of all queues managed by service
+    exchangePrefix:           'exchange/' # Prefix of all exchanges managed by service
+    connectionMaxLifetime:    '- 72 hours' # Longest time a connection from a client should live
+
+    # These manage parameters for taskcluster-lib-iterate
+    iterationLength:          15
+    iterationGap:             15
+    iterationFailes:          5
 
   alerter:
     messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE

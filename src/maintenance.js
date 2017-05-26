@@ -199,7 +199,6 @@ async function handleQueues({cfg, prefix, manager, Namespace, RabbitQueue, notif
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
-    let {currentState, subject, content} = decideState(queue, cfg);
     let namespace = queue.name.slice(cfg.queuePrefix.length).split('/')[0];
     let ns = await Namespace.load({namespace}, true);
 
@@ -208,6 +207,8 @@ async function handleQueues({cfg, prefix, manager, Namespace, RabbitQueue, notif
       debug(`deleting ${queue.name} with ${queue.messages} messages because namespace is expired.`);
       return await manager.deleteQueue(queue.name);
     }
+
+    let {currentState, subject, content} = decideState(queue, cfg);
 
     // First we'll send any notifications that we can
     if (await needMessage(queue.name, currentState, RabbitQueue)) {
@@ -240,8 +241,8 @@ async function handleExchanges({cfg, prefix, manager, Namespace}) {
     }
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
     if (!(await Namespace.load({namespace}, true))) {
-      debug(`Deleting ${exhange.name} because associated namespace is expired!`);
-      await rabbit.deleteExchange(exchange.name);
+      debug(`Deleting ${exchange.name} because associated namespace is expired!`);
+      await manager.deleteExchange(exchange.name);
     }
   }, {concurrency: 10});
 }
@@ -256,18 +257,26 @@ async function handleConnections({cfg, prefix, manager, Namespace}) {
     }
 
     let terminate = false;
+    let reason = '';
 
+    // TODO: Preload all of these things at once
     if (!(await Namespace.load({namespace: user}, true))) {
       debug(`Terminating connection for expired user: ${user}`);
+      reason = 'Namespace exprired.';
       terminate = true;
     }
     if (old > new Date(connection.connected_at)) {
       debug(`Terminating connection for user: ${user} due to being too long-lived`);
+      reason = 'Connection too long lived.';
       terminate = true;
     }
 
     if (terminate) {
-      await rabbit.terminateConnection(connection.user);
+      await manager.terminateConnection(connection.name, reason).catch(err => {
+        if (err.statusCode !== 404) {
+          throw err;
+        }
+      });
     }
   }, {concurrency: 10});
 }
@@ -292,11 +301,13 @@ async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue}) {
 
 module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) => {
   let prefix = cfg.app.namespacePrefix;
-  let alertLifetime = cfg.app.rabbitQueueExpirationDela;
+  let alertLifetime = cfg.app.rabbitQueueExpirationDelay;
+
+  await handleConnections({cfg: cfg.monitor, prefix, manager, Namespace});
+
   return await Promise.all([
     handleQueues({cfg: cfg.monitor, prefix, manager, Namespace, RabbitQueue, notify}),
     handleExchanges({cfg: cfg.monitor, prefix, manager, Namespace}),
-    handleConnections({cfg: cfg.monitor, prefix, manager, Namespace}),
     cleanupRabbitQueues({cfg: cfg.monitor, alertLifetime, RabbitQueue}),
   ]);
 };

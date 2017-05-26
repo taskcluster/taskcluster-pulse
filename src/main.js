@@ -4,6 +4,7 @@ let loader            = require('taskcluster-lib-loader');
 let config            = require('typed-env-config');
 let monitor           = require('taskcluster-lib-monitor');
 let validator         = require('taskcluster-lib-validate');
+let Iterate           = require('taskcluster-lib-iterate');
 let docs              = require('taskcluster-lib-docs');
 let _                 = require('lodash');
 let v1                = require('./v1');
@@ -104,18 +105,23 @@ let load = loader({
   'monitor-rabbit': {
     requires: ['cfg', 'monitor', 'rabbitManager', 'Namespace', 'RabbitQueue'],
     setup: async ({cfg, monitor, rabbitManager, Namespace, RabbitQueue}) => {
-      debug('Begin an interation of rabbit monitoring');
-      await maintenance.monitor({
-        cfg,
-        manager: rabbitManager,
-        Namespace,
-        RabbitQueue,
-        notify: new taskcluster.Notify(cfg.taskcluster),
+      let i = new Iterate({
+        maxFailures: cfg.monitor.iterationFails,
+        maxIterationTime: cfg.monitor.iterationLength,
+        waitTime: cfg.monitor.iterationGap,
+        monitor: monitor.prefix('monitor-rabbit'),
+        handler: (watchDog, state) => {
+          watchDog.stop();
+          return maintenance.monitor({
+            cfg,
+            manager: rabbitManager,
+            Namespace,
+            RabbitQueue,
+            notify: new taskcluster.Notify(cfg.taskcluster),
+          });
+        },
       });
-      debug('Finish an interation of rabbit monitoring');
-      monitor.count('monitor-rabbit.done');
-      monitor.stopResourceMonitoring();
-      await monitor.flush();
+      i.start();
     },
   },
 
