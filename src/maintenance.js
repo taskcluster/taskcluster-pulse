@@ -192,7 +192,7 @@ async function needMessage(name, currentState, RabbitQueue) {
   return sendMessage;
 }
 
-async function handleQueues({cfg, prefix, manager, Namespace, RabbitQueue, notify}) {
+async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify}) {
   let debug = Debug('maintenance.handle-queues');
   await Promise.map(await manager.queues(), async queue => {
     if (!queue.name.startsWith(cfg.queuePrefix + prefix)) {
@@ -200,7 +200,7 @@ async function handleQueues({cfg, prefix, manager, Namespace, RabbitQueue, notif
     }
 
     let namespace = queue.name.slice(cfg.queuePrefix.length).split('/')[0];
-    let ns = await Namespace.load({namespace}, true);
+    let ns = _.find(namespaces, {namespace});
 
     if (!ns) {
       // We get rid of any queues from namespaces that are gone
@@ -233,21 +233,21 @@ async function handleQueues({cfg, prefix, manager, Namespace, RabbitQueue, notif
   }, {concurrency: 10});
 }
 
-async function handleExchanges({cfg, prefix, manager, Namespace}) {
+async function handleExchanges({cfg, prefix, manager, namespaces}) {
   let debug = Debug('maintenance.handle-exchanges');
   await Promise.map(await manager.exchanges(), async exchange => {
     if (!exchange.name.startsWith(cfg.exchangePrefix + prefix)) {
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
-    if (!(await Namespace.load({namespace}, true))) {
+    if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
       await manager.deleteExchange(exchange.name);
     }
   }, {concurrency: 10});
 }
 
-async function handleConnections({cfg, prefix, manager, Namespace}) {
+async function handleConnections({cfg, prefix, manager, namespaces}) {
   let debug = Debug('maintenance.handle-connections');
   let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
   await Promise.map(await manager.connections(), async connection => {
@@ -259,8 +259,7 @@ async function handleConnections({cfg, prefix, manager, Namespace}) {
     let terminate = false;
     let reason = '';
 
-    // TODO: Preload all of these things at once
-    if (!(await Namespace.load({namespace: user}, true))) {
+    if (!_.find(namespaces, {namespace: user})) {
       debug(`Terminating connection for expired user: ${user}`);
       reason = 'Namespace exprired.';
       terminate = true;
@@ -303,11 +302,20 @@ module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) 
   let prefix = cfg.app.namespacePrefix;
   let alertLifetime = cfg.app.rabbitQueueExpirationDelay;
 
-  await handleConnections({cfg: cfg.monitor, prefix, manager, Namespace});
+  let namespaces = [];
+  let continuationToken = null;
+
+  do {
+    let res = await Namespace.scan();
+    namespaces = namespaces.concat(res.entries);
+    continuationToken = res.continuation;
+  } while (continuationToken);
+
+  await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces});
 
   return await Promise.all([
-    handleQueues({cfg: cfg.monitor, prefix, manager, Namespace, RabbitQueue, notify}),
-    handleExchanges({cfg: cfg.monitor, prefix, manager, Namespace}),
+    handleQueues({cfg: cfg.monitor, prefix, manager, namespaces, RabbitQueue, notify}),
+    handleExchanges({cfg: cfg.monitor, prefix, manager, namespaces}),
     cleanupRabbitQueues({cfg: cfg.monitor, alertLifetime, RabbitQueue}),
   ]);
 };
