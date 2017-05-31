@@ -1,6 +1,6 @@
 language: node_js
 sudo: required # We must use sudo here to have rabbitmq running :(
-dist: zesty # for a newer rabbtimq
+dist: trusty # for a newer rabbtimq
 env:
   global:
   - DEBUG='*,-babel*,-mocha*,-eslint*'
