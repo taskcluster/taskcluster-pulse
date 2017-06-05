@@ -192,9 +192,9 @@ async function needMessage(name, currentState, RabbitQueue) {
   return sendMessage;
 }
 
-async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify}) {
+async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify, virtualhost}) {
   let debug = Debug('maintenance.handle-queues');
-  await Promise.map(await manager.queues(), async queue => {
+  await Promise.map(await manager.queues(virtualhost), async queue => {
     if (!queue.name.startsWith(cfg.queuePrefix + prefix)) {
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
@@ -205,7 +205,7 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     if (!ns) {
       // We get rid of any queues from namespaces that are gone
       debug(`deleting ${queue.name} with ${queue.messages} messages because namespace is expired.`);
-      return await manager.deleteQueue(queue.name);
+      return await manager.deleteQueue(queue.name, virtualhost);
     }
 
     let {currentState, subject, content} = decideState(queue, cfg);
@@ -228,29 +228,29 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     // Finally we'll delete the queues if they're danger-big
     if (currentState === 'danger') {
       debug(`deleting ${queue.name} with ${queue.messages} messages.`);
-      await manager.deleteQueue(queue.name);
+      await manager.deleteQueue(queue.name, virtualhost);
     }
   }, {concurrency: 10});
 }
 
-async function handleExchanges({cfg, prefix, manager, namespaces}) {
+async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost}) {
   let debug = Debug('maintenance.handle-exchanges');
-  await Promise.map(await manager.exchanges(), async exchange => {
+  await Promise.map(await manager.exchanges(virtualhost), async exchange => {
     if (!exchange.name.startsWith(cfg.exchangePrefix + prefix)) {
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
     if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
-      await manager.deleteExchange(exchange.name);
+      await manager.deleteExchange(exchange.name, virtualhost);
     }
   }, {concurrency: 10});
 }
 
-async function handleConnections({cfg, prefix, manager, namespaces}) {
+async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}) {
   let debug = Debug('maintenance.handle-connections');
   let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
-  await Promise.map(await manager.connections(), async connection => {
+  await Promise.map(await manager.connections(virtualhost), async connection => {
     let user = connection.user.slice(0, -2);
     if (!user.startsWith(prefix)) {
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
@@ -301,6 +301,7 @@ async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue}) {
 module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) => {
   let prefix = cfg.app.namespacePrefix;
   let alertLifetime = cfg.app.rabbitQueueExpirationDelay;
+  let virtualhost = cfg.app.virtualhost;
 
   let namespaces = [];
   let continuationToken = null;
@@ -311,11 +312,11 @@ module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) 
     continuationToken = res.continuation;
   } while (continuationToken);
 
-  await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces});
+  await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost});
 
   return await Promise.all([
-    handleQueues({cfg: cfg.monitor, prefix, manager, namespaces, RabbitQueue, notify}),
-    handleExchanges({cfg: cfg.monitor, prefix, manager, namespaces}),
+    handleQueues({cfg: cfg.monitor, prefix, manager, namespaces, RabbitQueue, notify, virtualhost}),
+    handleExchanges({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost}),
     cleanupRabbitQueues({cfg: cfg.monitor, alertLifetime, RabbitQueue}),
   ]);
 };
