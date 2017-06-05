@@ -269,7 +269,7 @@ suite('Namespace', () => {
     });
   });
 
-  suite('monitoring queues', async () => {
+  suite('monitoring queues (long tests)', async () => {
 
     if (!helper.haveRabbitMq) {
       this.pending = true;
@@ -372,7 +372,11 @@ suite('Namespace', () => {
     });
   });
 
-  suite('monitoring other', async () => {
+  suite('monitoring other (long tests)', async () => {
+    if (!helper.haveRabbitMq) {
+      this.pending = true;
+    }
+
     test('connections', async () => {
       // ensure there's a connection we shouldn't mess with
       let unmanagedConnection = await amqp.connect(helper.cfg.app.amqpUrl);
@@ -384,8 +388,10 @@ suite('Namespace', () => {
       });
       let dyingConnection = await amqp.connect(ns2.connectionString);
 
-      // To get us over the kill threshold
-      await testing.sleep(2000);
+      // To get us over the kill threshold. This is inherently somewhat
+      // flaky, since it is using timing in tests, but unfortunately this
+      // relies on times recorded by rabbitmq itself.
+      await testing.sleep(5000);
 
       // setup a connection we _should not_ kill
       let ns1 = await helper.pulse.claimNamespace('tcpulse-test-m1', {
@@ -394,23 +400,27 @@ suite('Namespace', () => {
       });
       let managedConnection = await amqp.connect(ns1.connectionString);
 
-      let connectedUsers = _.map(await helper.rabbit.connections(), 'user');
-      assert(_.includes(connectedUsers, 'guest'));
-      assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-      assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+      await testing.poll(async () => {
+        let connectedUsers = _.map(await helper.rabbit.connections(), 'user');
+        assert(_.includes(connectedUsers, 'guest'));
+        assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
+        assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+      });
 
       await maintenance.monitor({
-        cfg: _.defaults({monitor: {connectionMaxLifetime: '-1 seconds'}}, helper.cfg),
+        cfg: _.defaults({monitor: {connectionMaxLifetime: '-5 seconds'}}, helper.cfg),
         manager: helper.rabbit,
         Namespace: helper.Namespace,
         RabbitQueue: helper.RabbitQueue,
         notify: {email: sinon.spy()},
       });
 
-      connectedUsers = _.map(await helper.rabbit.connections(), 'user');
-      assert(_.includes(connectedUsers, 'guest'));
-      assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-      assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+      await testing.poll(async () => {
+        let connectedUsers = _.map(await helper.rabbit.connections(), 'user');
+        assert(_.includes(connectedUsers, 'guest'));
+        assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
+        assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+      });
     });
 
     test('exchanges', async () => {
