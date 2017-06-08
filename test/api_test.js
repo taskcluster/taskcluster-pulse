@@ -5,6 +5,7 @@ suite('API', () => {
   let load = require('../lib/main');
   let slugid = require('slugid');
   let _ = require('lodash');
+  let Promise = require('bluebird');
 
   let Namespace;
 
@@ -159,7 +160,7 @@ suite('API', () => {
   suite('listNamespaces', function() {
     test('returns namespaces', async () => {
       // create a bunch of namespaces
-      await Promise.all(['foo', 'bar', 'bing', 'baz'].map(n => 
+      await Promise.all(['foo', 'bar', 'bing', 'baz'].map(n =>
         helper.pulse.claimNamespace(`tcpulse-test-${n}`, {
           expires: taskcluster.fromNow('1 day'),
           contact: 'a@a.com',

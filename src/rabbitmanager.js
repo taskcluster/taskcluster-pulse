@@ -131,8 +131,9 @@ class RabbitManager {
   /**
    * Get a list of all exchanges
    */
-  async exchanges() {
-    return await this.request('exchanges');
+  async exchanges(vhost='/') {
+    vhost = this.encode(vhost);
+    return await this.request(`exchanges/${vhost}`);
   }
 
   /**
@@ -287,8 +288,9 @@ class RabbitManager {
    * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
    * Note that the stats may not be available for newly-created queues.
    */
-  async queues() {
-    return await this.request('queues');
+  async queues(vhost='/') {
+    vhost = this.encode(vhost);
+    return await this.request(`queues/${vhost}`);
   }
 
   /**

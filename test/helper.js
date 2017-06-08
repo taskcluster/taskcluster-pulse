@@ -5,7 +5,7 @@ let mocha = require('mocha');
 let taskcluster = require('taskcluster-client');
 let config = require('typed-env-config');
 let testing = require('taskcluster-lib-testing');
-let RabbitStressor = require('../.bin/rabbitstressor');
+let amqp = require('amqplib');
 let v1 = require('../lib/v1');
 let load = require('../lib/main');
 let data = require('../lib/data');
@@ -52,13 +52,18 @@ mocha.before(async () => {
   });
 
   helper.rabbit = await load('rabbitManager', overwrites);
-  helper.alerter = overwrites.rabbitAlerter = await load('rabbitAlerter', overwrites);
-  helper.monitor = overwrites.rabbitMonitor = await load('rabbitMonitor', overwrites);
+  helper.Namespace = await load('Namespace', overwrites);
+  helper.RabbitQueue = await load('RabbitQueue', overwrites);
 
-  helper.stressor = new RabbitStressor(cfg.stressor, cfg.app.amqpUrl, helper.rabbit);
+  helper.connection = await amqp.connect(cfg.app.amqpUrl);
+  let channel = await helper.connection.createChannel();
+  helper.write = (queueName, message) => {
+    channel.sendToQueue(queueName, new Buffer(message));
+  };
 });
 
 mocha.after(async () => {
   await webServer.terminate();
   testing.fakeauth.stop();
+  helper.connection.close();
 });
