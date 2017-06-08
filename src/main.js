@@ -109,6 +109,7 @@ let load = loader({
         maxFailures: cfg.monitor.iterationFails,
         maxIterationTime: cfg.monitor.iterationLength,
         waitTime: cfg.monitor.iterationGap,
+        watchDog: 100000, // We don't really use this, but it has to be set
         monitor: monitor.prefix('monitor-rabbit'),
         handler: (watchDog, state) => {
           watchDog.stop();
