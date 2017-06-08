@@ -163,7 +163,7 @@ A common cause of this situation is that your service has crashed.`;
   return {currentState, subject, content};
 }
 
-async function needMessage(name, currentState, RabbitQueue) {
+async function updateQueueStatus(name, currentState, RabbitQueue) {
   let rq;
   let sendMessage = false;
   try {
@@ -211,7 +211,7 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     let {currentState, subject, content} = decideState(queue, cfg);
 
     // First we'll send any notifications that we can
-    if (await needMessage(queue.name, currentState, RabbitQueue)) {
+    if (await updateQueueStatus(queue.name, currentState, RabbitQueue)) {
 
       if (ns.contact) {
         debug(`Sending a ${currentState} notification for ${queue.name} to ${ns.contact}`);
@@ -261,7 +261,7 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
 
     if (!_.find(namespaces, {namespace: user})) {
       debug(`Terminating connection for expired user: ${user}`);
-      reason = 'Namespace exprired.';
+      reason = 'Namespace expired.';
       terminate = true;
     }
     if (old > new Date(connection.connected_at)) {

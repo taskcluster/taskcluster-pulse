@@ -75,10 +75,10 @@ Namespace.prototype.json = function({cfg, includePassword}) {
     let reclaimAt = new Date(nextRotation.getTime() + (rotationAfter - nextRotation) / 2);
 
     rv.connectionString = buildConnectionString({
+      protocol: cfg.app.amqpProtocol,
       username: this.username(),
       password: this.password,
       hostname: cfg.app.amqpHostname,
-      protocol: cfg.app.amqpProtocol,
       port: cfg.app.amqpPort,
     });
     rv.reclaimAt = reclaimAt.toJSON();
@@ -103,8 +103,13 @@ let RabbitQueue = Entity.configure({
   partitionKey:     Entity.keys.StringKey('name'),
   rowKey:           Entity.keys.ConstantKey('name'),
   properties: {
+    // The name of the queue that is being tracked
     name:      Entity.types.String,
+
+    // The state the queue is in. This will be something like warning or normal.
     state:     Entity.types.String,
+
+    // The last time this entity was updated.
     updated:   Entity.types.Date,
   },
 });

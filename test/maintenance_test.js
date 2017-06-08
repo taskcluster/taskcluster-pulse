@@ -314,7 +314,7 @@ suite('Namespace', () => {
         await testing.poll(async () => {
           debug('filling monitor testing safe queue');
           let res = await helper.rabbit.queue(safeQueueName);
-          assert.equal(res.messages, 0);
+          assert.equal(res.messages, 50);
         }, 64);
       }
 
