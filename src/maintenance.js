@@ -196,8 +196,10 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
   let debug = Debug('maintenance.handle-queues');
   await Promise.map(await manager.queues(virtualhost), async queue => {
     if (!queue.name.startsWith(cfg.queuePrefix + prefix)) {
+      console.log('skipping queue: ' + queue.name);
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
+    console.log('would monitor queue: ' + queue.name);
 
     let namespace = queue.name.slice(cfg.queuePrefix.length).split('/')[0];
     let ns = _.find(namespaces, {namespace});
@@ -238,8 +240,10 @@ async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost}) 
   let debug = Debug('maintenance.handle-exchanges');
   await Promise.map(await manager.exchanges(virtualhost), async exchange => {
     if (!exchange.name.startsWith(cfg.exchangePrefix + prefix)) {
+      console.log('skipping exchange: ' + exchange.name);
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
+    console.log('would monitor exchange: ' + exchange.name);
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
     if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
@@ -254,8 +258,10 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
   await Promise.map(await manager.connections(virtualhost), async connection => {
     let user = connection.user.slice(0, -2);
     if (!user.startsWith(prefix)) {
+      console.log('skipping user: ' + user);
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
+    console.log('would monitor user: ' + user);
 
     let terminate = false;
     let reason = '';
