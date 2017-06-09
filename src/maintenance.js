@@ -319,6 +319,8 @@ module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) 
     continuationToken = res.continuation;
   } while (continuationToken);
 
+  console.log(namespaces);
+
   await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost});
 
   return await Promise.all([
