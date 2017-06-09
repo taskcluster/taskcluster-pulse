@@ -253,7 +253,7 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
   let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
   await Promise.map(await manager.connections(virtualhost), async connection => {
     let user = connection.user.slice(0, -2);
-    if (!user.startsWith(prefix)) {
+    if (!(user.startsWith(prefix) && /-[12]$/.test(connection.user))) {
       return; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
