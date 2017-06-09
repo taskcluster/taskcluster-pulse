@@ -383,8 +383,7 @@ class RabbitManager {
    * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
    */
   async connections(vhost='/') {
-    vhost = this.encode(vhost);
-    return await this.request(`vhosts/${vhost}/connections`);
+    return await this.request(vhost == '/' ? 'connections' : `vhosts/${this.encode(vhost)}/connections`);
   }
 
   /** Forcibly terminate a connection
