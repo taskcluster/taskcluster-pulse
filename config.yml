@@ -8,7 +8,7 @@ defaults:
     rabbitQueueExpirationDelay: '- 24 hours' # This means we re-send alerts at most once a day
 
     # namespaces are rotated at this time interval.
-    namespaceRotationInterval: '1 hour'
+    namespaceRotationInterval: '6 hours'
 
     # the virtualhost to manage
     virtualhost: /
