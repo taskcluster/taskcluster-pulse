@@ -56,17 +56,17 @@ api.declare({
   title:          'List Namespaces',
   query: {
     limit: /[0-9]+/,
-    continuation: /.*/,
+    continuationToken: /.*/,
   },
   description: [
     'List the namespaces managed by this service.',
     '',
     'This will list up to 1000 namespaces. If more namespaces are present a',
     '`continuationToken` will be returned, which can be given in the next',
-    'request. For the initial request, do not provide continuation.',
+    'request. For the initial request, do not provide continuation token.',
   ].join('\n'),
 }, async function(req, res) {
-  var continuation = req.query.continuation;
+  var continuation = req.query.continuationToken;
   var limit = req.query.limit ? parseInt(req.query.limit, 10) : 1000;
   if (limit > 1000) {
     limit = 1000;
