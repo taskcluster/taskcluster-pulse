@@ -173,7 +173,7 @@ suite('API', () => {
       let res = await helper.pulse.listNamespaces({limit: 2});
       assert.equal(res.namespaces.length, 2);
       res.namespaces.forEach(ns => seen.add(ns.namespace));
-      res = await helper.pulse.listNamespaces({limit: 2, continuation: res.continuationToken});
+      res = await helper.pulse.listNamespaces({limit: 2, continuationToken: res.continuationToken});
       assert.equal(res.namespaces.length, 2);
       res.namespaces.forEach(ns => seen.add(ns.namespace));
       assert.equal(seen.size, 4);
