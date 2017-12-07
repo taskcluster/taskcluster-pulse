@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "amqplib": "^0.5.2",
-    "assume": "^1.4.1",
     "aws-sdk": "^2.5.3",
     "azure-entities": "^1.0.3",
     "debug": "^3.1.0",
