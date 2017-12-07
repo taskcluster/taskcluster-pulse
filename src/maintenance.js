@@ -205,7 +205,7 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     if (!ns) {
       // We get rid of any queues from namespaces that are gone
       debug(`deleting ${queue.name} with ${queue.messages} messages because namespace is expired.`);
-      //return await manager.deleteQueue(queue.name, virtualhost);
+      await manager.deleteQueue(queue.name, virtualhost);
       return;
     }
 
@@ -229,7 +229,7 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     // Finally we'll delete the queues if they're danger-big
     if (currentState === 'danger') {
       debug(`deleting ${queue.name} with ${queue.messages} messages.`);
-      //await manager.deleteQueue(queue.name, virtualhost);
+      await manager.deleteQueue(queue.name, virtualhost);
     }
   }, {concurrency: 10});
 }
@@ -243,7 +243,7 @@ async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost}) 
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
     if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
-      //await manager.deleteExchange(exchange.name, virtualhost);
+      await manager.deleteExchange(exchange.name, virtualhost);
     }
   }, {concurrency: 10});
 }
@@ -272,11 +272,11 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
     }
 
     if (terminate) {
-      //await manager.terminateConnection(connection.name, reason).catch(err => {
-      //  if (err.statusCode !== 404) {
-      //    throw err;
-      //  }
-      //});
+      await manager.terminateConnection(connection.name, reason).catch(err => {
+        if (err.statusCode !== 404) {
+          throw err;
+        }
+      });
     }
   }, {concurrency: 10});
 }
