@@ -19,7 +19,6 @@
     "assume": "^1.4.1",
     "aws-sdk": "^2.5.3",
     "azure-entities": "^1.0.3",
-    "bluebird": "^3.5.0",
     "debug": "^3.1.0",
     "eslint-config-taskcluster": "^3.0.0",
     "lodash": "^4.15.0",

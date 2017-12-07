@@ -5,7 +5,6 @@ suite('API', () => {
   let load = require('../src/main');
   let slugid = require('slugid');
   let _ = require('lodash');
-  let Promise = require('bluebird');
 
   let Namespace;
 
