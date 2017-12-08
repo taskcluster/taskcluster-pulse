@@ -3,7 +3,6 @@ let _ = require('lodash');
 let slugid = require('slugid');
 let assert = require('assert');
 let Debug = require('debug');
-let Promise = require('bluebird');
 
 let setPulseUser = async function({username, password, namespace, rabbitManager, cfg}) {
   await rabbitManager.createUser(username, password, cfg.app.userTags);
@@ -194,9 +193,10 @@ async function updateQueueStatus(name, currentState, RabbitQueue) {
 
 async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify, virtualhost}) {
   let debug = Debug('maintenance.handle-queues');
-  await Promise.map(await manager.queues(virtualhost), async queue => {
+  let queues = await manager.queues(virtualhost);
+  for (let queue of queues) {
     if (!queue.name.startsWith(cfg.queuePrefix + prefix)) {
-      return; // Note: This is very important to avoid stepping on pulseguardian's toes
+      continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
     let namespace = queue.name.slice(cfg.queuePrefix.length).split('/')[0];
@@ -205,8 +205,8 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     if (!ns) {
       // We get rid of any queues from namespaces that are gone
       debug(`deleting ${queue.name} with ${queue.messages} messages because namespace is expired.`);
-      //return await manager.deleteQueue(queue.name, virtualhost);
-      return;
+      await manager.deleteQueue(queue.name, virtualhost);
+      continue;
     }
 
     let {currentState, subject, content} = decideState(queue, cfg);
@@ -229,32 +229,34 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     // Finally we'll delete the queues if they're danger-big
     if (currentState === 'danger') {
       debug(`deleting ${queue.name} with ${queue.messages} messages.`);
-      //await manager.deleteQueue(queue.name, virtualhost);
+      await manager.deleteQueue(queue.name, virtualhost);
     }
-  }, {concurrency: 10});
+  }
 }
 
 async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost}) {
   let debug = Debug('maintenance.handle-exchanges');
-  await Promise.map(await manager.exchanges(virtualhost), async exchange => {
+  let exchanges = await manager.exchanges(virtualhost);
+  for (let exchange of exchanges) {
     if (!exchange.name.startsWith(cfg.exchangePrefix + prefix)) {
-      return; // Note: This is very important to avoid stepping on pulseguardian's toes
+      continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
     if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
-      //await manager.deleteExchange(exchange.name, virtualhost);
+      await manager.deleteExchange(exchange.name, virtualhost);
     }
-  }, {concurrency: 10});
+  }
 }
 
 async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}) {
   let debug = Debug('maintenance.handle-connections');
   let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
-  await Promise.map(await manager.connections(virtualhost), async connection => {
+  let connections = await manager.connections(virtualhost);
+  for (let connection of connections) {
     let user = connection.user.slice(0, -2);
     if (!(user.startsWith(prefix) && /-[12]$/.test(connection.user))) {
-      return; // Note: This is very important to avoid stepping on pulseguardian's toes
+      continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
     let terminate = false;
@@ -272,13 +274,13 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
     }
 
     if (terminate) {
-      //await manager.terminateConnection(connection.name, reason).catch(err => {
-      //  if (err.statusCode !== 404) {
-      //    throw err;
-      //  }
-      //});
+      await manager.terminateConnection(connection.name, reason).catch(err => {
+        if (err.statusCode !== 404) {
+          throw err;
+        }
+      });
     }
-  }, {concurrency: 10});
+  }
 }
 
 async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue}) {

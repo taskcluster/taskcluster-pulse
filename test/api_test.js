@@ -2,10 +2,9 @@ suite('API', () => {
   let assert = require('assert');
   let taskcluster = require('taskcluster-client');
   let helper = require('./helper');
-  let load = require('../lib/main');
+  let load = require('../src/main');
   let slugid = require('slugid');
   let _ = require('lodash');
-  let Promise = require('bluebird');
 
   let Namespace;
 

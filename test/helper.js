@@ -6,9 +6,9 @@ let taskcluster = require('taskcluster-client');
 let config = require('typed-env-config');
 let testing = require('taskcluster-lib-testing');
 let amqp = require('amqplib');
-let v1 = require('../lib/v1');
-let load = require('../lib/main');
-let data = require('../lib/data');
+let v1 = require('../src/v1');
+let load = require('../src/main');
+let data = require('../src/data');
 
 // Load configuration
 let cfg = config({profile: 'test'});
