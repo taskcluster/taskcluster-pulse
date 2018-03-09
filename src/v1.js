@@ -15,6 +15,7 @@ let api = new API({
     'Taskcluster credentials. This allows for self-service pulse',
     'access and greater control within the Taskcluster project.',
   ].join('\n'),
+  name: 'pulse',
   schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
   context: [
     'cfg',
@@ -117,9 +118,9 @@ api.declare({
   title:    'Claim a namespace',
   input:    'namespace-request.json',
   output:   'namespace-response.json',
-  scopes:   [
+  scopes: {AllOf:
     ['pulse:namespace:<namespace>'],
-  ],
+  },
   stability: 'experimental',
   description: [
     'Claim a namespace, returning a username and password with access to that',
