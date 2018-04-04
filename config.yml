@@ -1,6 +1,8 @@
 defaults:
   # Application specific configuration keys
   app:
+    publishMetaData:              !env:bool PUBLISH_METADATA
+
     # Prefix for exchanges, should always be v1/
     namespaceTableName: 'PulseNamespaces'
     namespacesExpirationDelay: '- 1 hour'

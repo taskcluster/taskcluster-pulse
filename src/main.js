@@ -34,6 +34,7 @@ let load = loader({
     requires: ['cfg'],
     setup: ({cfg}) => validator({
       prefix: 'pulse/v1/',
+      publish: cfg.app.publishMetaData,
       aws: cfg.aws,
     }),
   },
@@ -43,6 +44,7 @@ let load = loader({
     setup: ({cfg, validator}) => docs.documenter({
       credentials: cfg.taskcluster.credentials,
       tier: 'integrations',
+      publish: cfg.app.publishMetaData,
       schemas: validator.schemas,
       references: [
         {
@@ -51,6 +53,11 @@ let load = loader({
         },
       ],
     }),
+  },
+
+  writeDocs: {
+    requires: ['docs'],
+    setup: ({docs}) => docs.write({docsDir: process.env['DOCS_OUTPUT_DIR']}),
   },
 
   Namespace: {
@@ -88,7 +95,7 @@ let load = loader({
     setup: ({cfg, monitor, validator, rabbitManager, Namespace}) => v1.setup({
       context:          {cfg, rabbitManager, Namespace},
       authBaseUrl:      cfg.taskcluster.authBaseUrl,
-      publish:          process.env.NODE_ENV === 'production',
+      publish:          cfg.app.publishMetaData,
       baseUrl:          cfg.server.publicUrl + '/v1',
       referencePrefix:  'pulse/v1/api.json',
       aws:              cfg.aws,
