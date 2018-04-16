@@ -5,6 +5,7 @@
   "main": "node lib/server production",
   "license": "MPL-2.0",
   "scripts": {
+    "heroku-prebuild": "echo $SOURCE_VERSION > .git-revision",
     "lint": "eslint src/*.js test/*.js",
     "jsdoc": "jsdoc -c docs/jsdoc-config.json src/rabbitmanager.js --destination docs/jsdoc/",
     "test": "mocha --exit test/*_test.js",
@@ -31,7 +32,7 @@
     "taskcluster-lib-docs": "^4.2.1",
     "taskcluster-lib-iterate": "^1.0.2",
     "taskcluster-lib-loader": "^2.0.0",
-    "taskcluster-lib-monitor": "^4.6.3",
+    "taskcluster-lib-monitor": "^5.4.0",
     "taskcluster-lib-scopes": "^1.5.0",
     "taskcluster-lib-validate": "^3.0.1",
     "typed-env-config": "^1.1.0"
