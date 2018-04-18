@@ -4,6 +4,7 @@ let debug = require('debug')('taskcluster-pulse');
 let _ = require('lodash');
 let maintenance = require('./maintenance');
 let taskcluster = require('taskcluster-client');
+let Entity = require('azure-entities');
 
 let api = new API({
   title: 'Pulse Management Service',
@@ -57,7 +58,7 @@ api.declare({
   title:          'List Namespaces',
   query: {
     limit: /[0-9]+/,
-    continuationToken: /.*/,
+    continuationToken: Entity.continuationTokenPattern,
   },
   description: [
     'List the namespaces managed by this service.',
