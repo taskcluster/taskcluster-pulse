@@ -5,7 +5,7 @@
   "main": "node lib/server production",
   "license": "MPL-2.0",
   "scripts": {
-    "heroku-prebuild": "echo $SOURCE_VERSION > .git-revision",
+    "heroku-prebuild": "echo $SOURCE_VERSION > .git-version",
     "lint": "eslint src/*.js test/*.js",
     "jsdoc": "jsdoc -c docs/jsdoc-config.json src/rabbitmanager.js --destination docs/jsdoc/",
     "test": "mocha --exit test/*_test.js",
