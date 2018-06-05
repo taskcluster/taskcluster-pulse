@@ -1,4 +1,4 @@
-let API = require('taskcluster-lib-api');
+let APIBuilder = require('taskcluster-lib-api');
 let assert = require('assert');
 let debug = require('debug')('taskcluster-pulse');
 let _ = require('lodash');
@@ -6,7 +6,7 @@ let maintenance = require('./maintenance');
 let taskcluster = require('taskcluster-client');
 let Entity = require('azure-entities');
 
-let api = new API({
+let builder = new APIBuilder({
   title: 'Pulse Management Service',
   description: [
     'The taskcluster-pulse service, typically available at `pulse.taskcluster.net`',
@@ -16,8 +16,8 @@ let api = new API({
     'Taskcluster credentials. This allows for self-service pulse',
     'access and greater control within the Taskcluster project.',
   ].join('\n'),
-  name: 'pulse',
-  schemaPrefix: 'http://schemas.taskcluster.net/pulse/v1/',
+  serviceName: 'pulse',
+  version: 'v1',
   context: [
     'cfg',
     'rabbitManager',
@@ -28,9 +28,9 @@ let api = new API({
   },
 });
 
-module.exports = api;
+module.exports = builder;
 
-api.declare({
+builder.declare({
   method:     'get',
   route:      '/overview',
   name:       'overview',
@@ -49,7 +49,7 @@ api.declare({
   );
 });
 
-api.declare({
+builder.declare({
   method:         'get',
   route:          '/namespaces',
   name:           'listNamespaces',
@@ -87,7 +87,7 @@ api.declare({
   return res.reply(retval);
 });
 
-api.declare({
+builder.declare({
   method:   'get',
   route:    '/namespace/:namespace',
   name:     'namespace',
@@ -112,7 +112,7 @@ api.declare({
   res.reply(ns.json({cfg: this.cfg, includePassword: false}));
 });
 
-api.declare({
+builder.declare({
   method:   'post',
   route:    '/namespace/:namespace',
   name:     'claimNamespace',

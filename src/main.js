@@ -1,13 +1,14 @@
 let debug             = require('debug')('taskcluster-pulse');
-let app               = require('taskcluster-lib-app');
+let App               = require('taskcluster-lib-app');
 let loader            = require('taskcluster-lib-loader');
 let config            = require('typed-env-config');
 let monitor           = require('taskcluster-lib-monitor');
-let validator         = require('taskcluster-lib-validate');
+let SchemaSet         = require('taskcluster-lib-validate');
 let Iterate           = require('taskcluster-lib-iterate');
 let docs              = require('taskcluster-lib-docs');
+let {sasCredentials}  = require('taskcluster-lib-azure');
 let _                 = require('lodash');
-let v1                = require('./v1');
+let builder           = require('./v1');
 let taskcluster       = require('taskcluster-client');
 let data              = require('./data');
 let RabbitManager     = require('./rabbitmanager');
@@ -23,7 +24,8 @@ let load = loader({
   monitor: {
     requires: ['process', 'profile', 'cfg'],
     setup: ({process, profile, cfg}) => monitor({
-      project: cfg.monitoring.project || 'taskcluster-pulse',
+      rootUrl: cfg.taskcluster.rootUrl,
+      projectName: cfg.monitoring.project || 'taskcluster-pulse',
       enable: cfg.monitoring.enable,
       credentials: cfg.taskcluster.credentials,
       mock: profile === 'test',
@@ -31,27 +33,24 @@ let load = loader({
     }),
   },
 
-  validator: {
+  schemaset: {
     requires: ['cfg'],
-    setup: ({cfg}) => validator({
-      prefix: 'pulse/v1/',
+    setup: ({cfg}) => new SchemaSet({
+      serviceName: 'pulse',
       publish: cfg.app.publishMetaData,
       aws: cfg.aws,
     }),
   },
 
   docs: {
-    requires: ['cfg', 'validator'],
-    setup: ({cfg, validator}) => docs.documenter({
+    requires: ['cfg', 'schemaset'],
+    setup: ({cfg, schemaset}) => docs.documenter({
       credentials: cfg.taskcluster.credentials,
       tier: 'integrations',
       publish: cfg.app.publishMetaData,
-      schemas: validator.schemas,
+      schemaset,
       references: [
-        {
-          name: 'api',
-          reference: v1.reference({baseUrl: cfg.server.publicUrl + '/v1'}),
-        },
+        {name: 'api', reference: builder.reference()},
       ],
     }),
   },
@@ -63,45 +62,41 @@ let load = loader({
 
   Namespace: {
     requires: ['cfg', 'monitor'],
-    setup: async ({cfg, monitor}) => {
-      var ns = data.Namespace.setup({
-        account: cfg.azure.account,
-        table: cfg.app.namespaceTableName,
+    setup: async ({cfg, monitor}) => data.Namespace.setup({
+      tableName: cfg.app.namespaceTableName,
+      credentials: sasCredentials({
+        accountId: cfg.azure.accountId,
+        tableName: cfg.app.namespaceTableName,
+        rootUrl: cfg.taskcluster.rootUrl,
         credentials: cfg.taskcluster.credentials,
-        monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
-      });
-
-      await ns.ensureTable(); //create the table
-      return ns;
-    },
+      }),
+      monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
+    }),
   },
 
   RabbitQueue: {
     requires: ['cfg', 'monitor'],
-    setup: async ({cfg, monitor}) => {
-      var rq = data.RabbitQueue.setup({
-        account: cfg.azure.account,
-        table: cfg.app.rabbitQueueTableName,
+    setup: async ({cfg, monitor}) => data.RabbitQueue.setup({
+      tableName: cfg.app.rabbitQueueTableName,
+      credentials: sasCredentials({
+        accountId: cfg.azure.accountId,
+        tableName: cfg.app.rabbitQueueTableName,
+        rootUrl: cfg.taskcluster.rootUrl,
         credentials: cfg.taskcluster.credentials,
-        monitor: monitor.prefix(cfg.app.rabbitQueueTableName.toLowerCase()),
-      });
-
-      await rq.ensureTable(); //create the table
-      return rq;
-    },
+      }),
+      monitor: monitor.prefix(cfg.app.namespaceTableName.toLowerCase()),
+    }),
   },
 
   api: {
-    requires: ['cfg', 'monitor', 'validator', 'rabbitManager', 'Namespace'],
-    setup: ({cfg, monitor, validator, rabbitManager, Namespace}) => v1.setup({
+    requires: ['cfg', 'monitor', 'schemaset', 'rabbitManager', 'Namespace'],
+    setup: ({cfg, monitor, schemaset, rabbitManager, Namespace}) => builder.build({
       context:          {cfg, rabbitManager, Namespace},
-      authBaseUrl:      cfg.taskcluster.authBaseUrl,
+      rootUrl:          cfg.taskcluster.rootUrl,
       publish:          cfg.app.publishMetaData,
-      baseUrl:          cfg.server.publicUrl + '/v1',
-      referencePrefix:  'pulse/v1/api.json',
       aws:              cfg.aws,
       monitor:          monitor.prefix('api'),
-      validator,
+      schemaset,
     }),
   },
 
@@ -167,13 +162,13 @@ let load = loader({
 
   server: {
     requires: ['cfg', 'api', 'docs'],
-    setup: ({cfg, api, docs}) => {
-
-      debug('Launching server.');
-      let pulseApp = app(cfg.server);
-      pulseApp.use('/v1', api);
-      return pulseApp.createServer();
-    },
+    setup: ({cfg, api, docs}) => App({
+      port: cfg.server.port,
+      env: cfg.server.env,
+      forceSSL: cfg.server.forceSSL,
+      trustProxy: cfg.server.trustProxy,
+      apis: [api],
+    }),
   },
 }, ['profile', 'process']);
 
