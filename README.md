@@ -33,6 +33,12 @@ This service is not in production yet.
 It does not yet connect to pulse, and the queue monitoring mentioned above is
 not yet complete.
 
+Compatibility
+-------------
+
+This service works with RabbitMQ 3.6.x.
+Later versions come with changes to the management interface that are not yet supported.
+
 Testing
 -------
 
@@ -45,7 +51,7 @@ Steps before running the test:
     * Start rabbitmq: `rabbitmq-server`.
     * Enable management API: `rabbitmq-plugins enable rabbitmq_management`
    or
-    * Run `docker run -ti --rm -p 15672:15672 -p 5672:5672 rabbitmq:management-alpine`
+    * Run `docker run -ti --rm -p 15672:15672 -p 5672:5672 rabbitmq:3.6-management-alpine`
 1. Copy `user-config-example.yml` to `user-config.yml` unmodified
 1. `yarn install`
 
