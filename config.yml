@@ -32,8 +32,9 @@ defaults:
     # users.
     namespacePrefix: 'taskcluster-'
 
+    # parmeters used to construct the connection string given to users; this need not point to the
+    # same hostname as rabbit.baseUrl, but it should point to the same cluster!
     amqpHostname: !env TASKCLUSTER_AMQP_HOSTNAME
-    amqpUrl: !env TASKCLUSTER_AMQP_URL
     amqpProtocol: !env TASKCLUSTER_AMQP_PROTOCOL
     amqpPort: !env TASKCLUSTER_AMQP_PORT
 
@@ -106,14 +107,13 @@ production:
 
 test:
   app:
-    amqpUrl: 'amqp://localhost'
-    amqpHostname: localhost
     namespacePrefix: 'tcpulse-test-'
     namespaceRotationInterval: '1 hour'
     virtualhost: /
     userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
+    amqpHostname: localhost
     amqpProtocol: 'amqp://'
     amqpPort: 5672 # Non SSL port
     namespaceTableName: 'TestPulseNamespaces'

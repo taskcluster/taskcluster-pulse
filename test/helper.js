@@ -9,6 +9,7 @@ const amqp = require('amqplib');
 const builder = require('../src/v1');
 const load = require('../src/main');
 const data = require('../src/data');
+const {URL} = require('url');
 
 exports.load = stickyLoader(load);
 
@@ -152,9 +153,23 @@ exports.withAmqpChannels = (mock, skipping) => {
       return;
     }
 
+    // decipher an amqp url from the ampqBaseUrl (which is for the management API)
     const cfg = await exports.load('cfg');
+    const baseUrl = new URL(cfg.rabbit.baseUrl);
+    const amqpUrl = [
+      baseUrl.protocol === 'http:' ? 'amqp:' : 'amqps:',
+      '//',
+      cfg.rabbit.username,
+      ':',
+      cfg.rabbit.password,
+      '@',
+      baseUrl.hostname,
+      ':',
+      baseUrl.protocol === 'http:' ? '5672' : '5671',
+    ].join('');
+
     exports.channel = async () => {
-      const connection = await amqp.connect(cfg.app.amqpUrl);
+      const connection = await amqp.connect(amqpUrl);
       connections.push(connection);
       return await connection.createChannel();
     };
