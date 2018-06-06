@@ -32,8 +32,9 @@ defaults:
     # users.
     namespacePrefix: 'taskcluster-'
 
+    # parmeters used to construct the connection string given to users; this need not point to the
+    # same hostname as rabbit.baseUrl, but it should point to the same cluster!
     amqpHostname: !env TASKCLUSTER_AMQP_HOSTNAME
-    amqpUrl: !env TASKCLUSTER_AMQP_URL
     amqpProtocol: !env TASKCLUSTER_AMQP_PROTOCOL
     amqpPort: !env TASKCLUSTER_AMQP_PORT
 
@@ -44,9 +45,10 @@ defaults:
     apiVersion:       2014-01-01
 
   taskcluster:
-    credentials:      # Load strings from environment variables
-      clientId:       !env TASKCLUSTER_CLIENT_ID
-      accessToken:    !env TASKCLUSTER_ACCESS_TOKEN
+    rootUrl: !env TASKCLUSTER_ROOT_URL
+    credentials:
+      clientId: !env TASKCLUSTER_CLIENT_ID
+      accessToken: !env TASKCLUSTER_ACCESS_TOKEN
 
 
   monitoring:
@@ -54,7 +56,6 @@ defaults:
     enable: !env:bool MONITORING_ENABLE
 
   server:
-    publicUrl:                https://pulse.taskcluster.net
     port:                     !env:number PORT
     env:                      !env NODE_ENV
     forceSSL:                 !env:bool FORCE_SSL
@@ -72,7 +73,7 @@ defaults:
     baseUrl:                  !env RABBIT_BASE_URL
 
   azure:
-    account:                  !env AZURE_ACCOUNT_NAME
+    accountId:                !env AZURE_ACCOUNT
 
   monitor:
     alertThreshold:           !env MONITOR_ALERT_THRESHOLD # Number of messages in queue before alert
@@ -106,34 +107,29 @@ production:
 
 test:
   app:
-    amqpUrl: 'amqp://localhost'
-    amqpHostname: localhost
     namespacePrefix: 'tcpulse-test-'
     namespaceRotationInterval: '1 hour'
     virtualhost: /
     userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
+    amqpHostname: localhost
     amqpProtocol: 'amqp://'
     amqpPort: 5672 # Non SSL port
-
-  taskcluster:
-    credentials:
-      clientId:       'test-client'
-      accessToken:    'none'
+    namespaceTableName: 'TestPulseNamespaces'
+    rabbitQueueTableName: 'TestPulseRabbitQueues'
 
   monitoring:
     enable: false
 
   server:
-    publicUrl:        http://localhost:60403
     port:             60403
     forceSSL:         false
     trustProxy:       false
     env:              development
 
   azure:
-    account:  "inMemory"
+    accountId:        jungle
 
   monitor:
     alertThreshold:           4

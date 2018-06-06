@@ -1,61 +1,56 @@
-suite('API', () => {
-  let assert = require('assert');
-  let taskcluster = require('taskcluster-client');
-  let helper = require('./helper');
-  let load = require('../src/main');
-  let slugid = require('slugid');
-  let _ = require('lodash');
+const assert = require('assert');
+const taskcluster = require('taskcluster-client');
+const helper = require('./helper');
+const load = require('../src/main');
+const slugid = require('slugid');
+const _ = require('lodash');
 
-  let Namespace;
+helper.secrets.mockSuite('API', ['taskcluster'], function(mock, skipping) {
+  helper.withRabbitMq(mock, skipping);
+  helper.withEntities(mock, skipping);
+  helper.withServer(mock, skipping);
 
-  setup(async () => {
-    //set up the namespace entities
-    Namespace = await load('Namespace', {profile: 'test', process: 'test'});
-
-    //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
-    await Namespace.ensureTable();
+  test('overview runs without error', async function() {
+    await helper.client().overview();
   });
 
-  teardown(async () => {
-    //remove the namespace entities
-    await Namespace.removeTable();
+  test('ping', async function() {
+    await helper.client().ping();
   });
-
-  test('ping', () => {
-    return helper.pulse.ping();
-  });
-
-  test('overview', helper.requiresRabbitMq(() => {
-    return helper.pulse.overview();
-  }));
 
   suite('claimNamespace', function() {
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
+
     test('success', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+      return helper.client().claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
     });
 
     test('success, no contact', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+      return helper.client().claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
       });
     });
 
     test('success, no expires', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+      return helper.client().claimNamespace('tcpulse-test-sample', {
         contact: 'a@a.com',
       });
     });
 
     test('success, no payload keys', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sample', {
+      return helper.client().claimNamespace('tcpulse-test-sample', {
       });
     });
 
     test('char limit under', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-sampole', {
+      return helper.client().claimNamespace('tcpulse-test-sampole', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
@@ -63,7 +58,7 @@ suite('API', () => {
 
     test('char limit over', () => {
       const longname = 'tcpulse-test-samplenamespacesamplenamespacesamplenamespacesamplenamespace';
-      return helper.pulse.claimNamespace(longname, {
+      return helper.client().claimNamespace(longname, {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       }).then(function() {
@@ -74,7 +69,7 @@ suite('API', () => {
     });
 
     test('char invalid symbols', () => {
-      return helper.pulse.claimNamespace('tcpulse-test-%', {
+      return helper.client().claimNamespace('tcpulse-test-%', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       }).then(function() {
@@ -86,11 +81,11 @@ suite('API', () => {
 
     test('idempotency - return same namespace', async () => {
       let expires = taskcluster.fromNow('1 day');
-      let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      let a = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires,
         contact: 'a@a.com',
       });
-      let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      let b = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires,
         contact: 'a@a.com',
       });
@@ -99,14 +94,14 @@ suite('API', () => {
 
     test('update expires', async () => {
       let expires = taskcluster.fromNow('1 day');
-      let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      let a = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires,
         contact: 'a@a.com',
       });
       assert(_.isEqual(new Date(a.expires), expires));
 
       expires = taskcluster.fromNow('2 days');
-      let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      let b = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires,
         contact: 'a@a.com',
       });
@@ -115,12 +110,12 @@ suite('API', () => {
 
     test('update contact', async () => {
       let expires = taskcluster.fromNow('1 day');
-      let a = await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      let a = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires,
         contact: 'a@a.com',
       });
 
-      let b = await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      let b = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires,
         contact: 'newperson@a.com',
       });
@@ -129,13 +124,13 @@ suite('API', () => {
 
     test('entry creation', async () => {
       for (let i = 0; i < 10; i++) {
-        await helper.pulse.claimNamespace('tcpulse-test-sample', {
+        await helper.client().claimNamespace('tcpulse-test-sample', {
           expires: taskcluster.fromNow('1 day'),
           contact: 'a@a.com',
         });
       }
       let count = 0;
-      await Namespace.scan({},
+      await helper.Namespace.scan({},
         {
           limit:            250,
           handler:          ns => count++,
@@ -145,22 +140,34 @@ suite('API', () => {
   });
 
   suite('namespace', function() {
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
+
     test('returns namespace', async () => {
-      await helper.pulse.claimNamespace('tcpulse-test-sample', {
+      await helper.client().claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
 
-      let res = await helper.pulse.namespace('tcpulse-test-sample');
+      let res = await helper.client().namespace('tcpulse-test-sample');
       assert.equal(res.namespace, 'tcpulse-test-sample');
     });
   });
 
   suite('listNamespaces', function() {
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
+
     test('returns namespaces', async () => {
       // create a bunch of namespaces
       await Promise.all(['foo', 'bar', 'bing', 'baz'].map(n =>
-        helper.pulse.claimNamespace(`tcpulse-test-${n}`, {
+        helper.client().claimNamespace(`tcpulse-test-${n}`, {
           expires: taskcluster.fromNow('1 day'),
           contact: 'a@a.com',
         })));
@@ -169,10 +176,10 @@ suite('API', () => {
       // and ensuring all four namespaces are represented (even thought he order is
       // not deterministic)
       let seen = new Set();
-      let res = await helper.pulse.listNamespaces({limit: 2});
+      let res = await helper.client().listNamespaces({limit: 2});
       assert.equal(res.namespaces.length, 2);
       res.namespaces.forEach(ns => seen.add(ns.namespace));
-      res = await helper.pulse.listNamespaces({limit: 2, continuationToken: res.continuationToken});
+      res = await helper.client().listNamespaces({limit: 2, continuationToken: res.continuationToken});
       assert.equal(res.namespaces.length, 2);
       res.namespaces.forEach(ns => seen.add(ns.namespace));
       assert.equal(seen.size, 4);

@@ -1,31 +1,21 @@
-suite('Namespace', () => {
-  let _ = require('lodash');
-  let assert = require('assert');
-  let taskcluster = require('taskcluster-client');
-  let testing = require('taskcluster-lib-testing');
-  let helper = require('./helper');
-  let load = require('../src/main');
-  let slugid = require('slugid');
-  let maintenance = require('../src/maintenance');
-  let Debug = require('debug');
-  let amqp = require('amqplib');
-  let sinon = require('sinon');
+const _ = require('lodash');
+const assert = require('assert');
+const taskcluster = require('taskcluster-client');
+const testing = require('taskcluster-lib-testing');
+const helper = require('./helper');
+const load = require('../src/main');
+const slugid = require('slugid');
+const maintenance = require('../src/maintenance');
+const Debug = require('debug');
+const amqp = require('amqplib');
+const sinon = require('sinon');
 
-  let debug = Debug('maintenance-test');
-  let Namespace;
+const debug = Debug('maintenance-test');
 
-  setup(async () => {
-    //set up the namespace entities
-    Namespace = await load('Namespace', {profile: 'test', process: 'test'});
-
-    //ensureTable actually instantiates the table if non-existing. Supposed to be idempotent, but not
-    await Namespace.ensureTable();
-  });
-
-  teardown(async () => {
-    //remove the namespace entities
-    await Namespace.removeTable();
-  });
+helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping) {
+  helper.withRabbitMq(mock, skipping);
+  helper.withEntities(mock, skipping);
+  helper.withServer(mock, skipping);
 
   let shouldFail = async fn => {
     try {
@@ -36,70 +26,85 @@ suite('Namespace', () => {
     throw new Error('did not fail');
   };
 
+  // setup some useful values..
+  let cfg, rabbitManager;
+  suiteSetup('set cfg and rabbit', async function() {
+    cfg = await helper.load('cfg');
+    rabbitManager = await helper.load('rabbitManager');
+  });
+
   // note that claim is adequately tested via api_test.js
 
   suite('expire namespace', function() {
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
+
     test('expire namespace - no entries', async () => {
       await maintenance.expire({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
 
       let count = 0;
-      await Namespace.scan({}, {handler: (ns) => count++});
+      await helper.Namespace.scan({}, {handler: (ns) => count++});
       assert(count===0);
     });
 
     test('expire namespace - two entries', async () => {
       await maintenance.claim({
-        Namespace,
-        rabbitManager: helper.rabbit,
-        cfg: helper.cfg,
+        Namespace: helper.Namespace,
+        rabbitManager,
+        cfg,
         namespace: 'e1',
         contact: 'a@b.c',
         expires: taskcluster.fromNow('-1 day'),
       });
 
       await maintenance.claim({
-        Namespace,
-        rabbitManager: helper.rabbit,
-        cfg: helper.cfg,
+        Namespace: helper.Namespace,
+        rabbitManager,
+        cfg,
         namespace: 'e2',
         contact: 'a@b.c',
         expires: taskcluster.fromNow('11 day'),
       });
 
       await maintenance.expire({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
 
       let remaining = [];
-      await Namespace.scan({}, {handler: (ns) => remaining.push(ns.namespace)});
+      await helper.Namespace.scan({}, {handler: (ns) => remaining.push(ns.namespace)});
 
       assert.deepEqual(remaining, ['e2']);
     });
   });
 
   suite('rotate namespace', function() {
-    if (!helper.haveRabbitMq) {
-      this.pending = true;
-    }
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
 
     test('rotate namespace - no entries', async () => {
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
 
       let count = 0;
-      await Namespace.scan({},
+      await helper.Namespace.scan({},
         {
           limit:            250,
           handler:          (ns) => {
@@ -113,7 +118,7 @@ suite('Namespace', () => {
     test('rotate namespace - one entry', async () => {
       var old_pass = slugid.v4();
 
-      await Namespace.create({
+      await helper.Namespace.create({
         namespace: 'tcpulse-test-sample',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -125,13 +130,13 @@ suite('Namespace', () => {
       });
 
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
 
-      var ns = await Namespace.load({namespace: 'tcpulse-test-sample'});
+      var ns = await helper.Namespace.load({namespace: 'tcpulse-test-sample'});
       assert(ns, 'namespace should exist');
       assert(ns.rotationState==='2', 'namespace should have rotated state');
       assert(ns.password !== old_pass, 'rotated namespace should have new password');
@@ -141,7 +146,7 @@ suite('Namespace', () => {
     test('rotate namespace - two entry', async () => {
       var old_pass = slugid.v4();
 
-      await Namespace.create({
+      await helper.Namespace.create({
         namespace: 'tcpulse-test-sample1',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -152,7 +157,7 @@ suite('Namespace', () => {
         contact: 'a@b.c',
       });
 
-      await Namespace.create({
+      await helper.Namespace.create({
         namespace: 'tcpulse-test-sample2',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -164,14 +169,14 @@ suite('Namespace', () => {
       });
 
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
 
-      var ns1 = await Namespace.load({namespace: 'tcpulse-test-sample1'});
-      var ns2 = await Namespace.load({namespace: 'tcpulse-test-sample2'});
+      var ns1 = await helper.Namespace.load({namespace: 'tcpulse-test-sample1'});
+      var ns2 = await helper.Namespace.load({namespace: 'tcpulse-test-sample2'});
 
       assert(ns1 && ns2, 'namespaces should exist');
       assert(ns1.rotationState==='2', 'tcpulse-test-sample1 should have rotated state');
@@ -185,7 +190,7 @@ suite('Namespace', () => {
     test('rotate namespace - one of two entry', async () => {
       var old_pass = slugid.v4();
 
-      await Namespace.create({
+      await helper.Namespace.create({
         namespace: 'tcpulse-test-sample1',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -196,7 +201,7 @@ suite('Namespace', () => {
         contact: 'a@b.c',
       });
 
-      await Namespace.create({
+      await helper.Namespace.create({
         namespace: 'tcpulse-test-sample2',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -208,14 +213,14 @@ suite('Namespace', () => {
       });
 
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
 
-      var ns1 = await Namespace.load({namespace: 'tcpulse-test-sample1'});
-      var ns2 = await Namespace.load({namespace: 'tcpulse-test-sample2'});
+      var ns1 = await helper.Namespace.load({namespace: 'tcpulse-test-sample1'});
+      var ns2 = await helper.Namespace.load({namespace: 'tcpulse-test-sample2'});
 
       assert(ns1 && ns2, 'namespaces should exist');
       assert(ns1.rotationState==='2', 'tcpulse-test-sample1 should have rotated state');
@@ -228,7 +233,7 @@ suite('Namespace', () => {
     test('rotate namespace - multiple rotations', async () => {
       var old_pass = slugid.v4();
 
-      await Namespace.create({
+      await helper.Namespace.create({
         namespace: 'tcpulse-test-sample1',
         username: 'tcpulse-test-sample',
         password: old_pass,
@@ -240,80 +245,80 @@ suite('Namespace', () => {
       });
 
       var assertRotationState = async (state) => {
-        var ns1 = await Namespace.load({namespace: 'tcpulse-test-sample1'});
+        var ns1 = await helper.Namespace.load({namespace: 'tcpulse-test-sample1'});
         assert(ns1, 'namespaces should exist');
         assert(ns1.rotationState === state, 'tcpulse-test-sample1 should have rotated state');
       };
 
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 days'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
       await assertRotationState('2');
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('1 day'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
       await assertRotationState('1');
       await maintenance.rotate({
-        Namespace,
+        Namespace: helper.Namespace,
         now: taskcluster.fromNow('2 days'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
       await assertRotationState('2');
     });
   });
 
   suite('monitoring queues (long tests)', async () => {
+    helper.withAmqpChannels(mock, skipping);
 
-    if (!helper.haveRabbitMq) {
-      this.pending = true;
-    }
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
 
-    let connection, channel, exchangeName, queueName;
+    let channel;
+    const exchangeName = 'exchange/tcpulse-test-m/foo';
+    const queueName = 'queue/tcpulse-test-m/bar';
 
     let fillQueue = async (number) => {
       debug('adding ' + number + ' messages to the testing queue');
       _.times(number, () => channel.publish(exchangeName, 'bar', new Buffer('baz')));
-      let baseline = (await helper.rabbit.queue(queueName)).messages;
+      let baseline = (await rabbitManager.queue(queueName)).messages;
       await testing.poll(async () => {
         debug('filling monitor testing queue');
-        let res = await helper.rabbit.queue(queueName);
+        let res = await rabbitManager.queue(queueName);
         assert.equal(res.messages, baseline + number);
       }, 64);
     };
 
     setup(async () => {
-      exchangeName = 'exchange/tcpulse-test-m/foo';
-      queueName = 'queue/tcpulse-test-m/bar';
-      let ns = await helper.pulse.claimNamespace('tcpulse-test-m', {
+      let ns = await helper.client().claimNamespace('tcpulse-test-m', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
-      connection = await amqp.connect(ns.connectionString);
-      channel = await connection.createChannel();
+      channel = await helper.channel();
       await channel.assertExchange(exchangeName, 'topic');
     });
 
-    teardown(async () => {
-      await connection.close();
-    });
-
     test('basic', async () => {
-
       // Set up a queue that shouldn't be managed by the service
       let safeQueueName = 'beeblebrox';
-      await helper.rabbit.createQueue(safeQueueName);
-      if ((await helper.rabbit.queue(safeQueueName)).messages < 50) {
-        _.times(50, () => helper.write(safeQueueName, 'baz'));
+      await rabbitManager.createQueue(safeQueueName);
+      if ((await rabbitManager.queue(safeQueueName)).messages < 50) {
+        debug('filling monitor testing safe queue');
+        const msg = Buffer.from('baz');
+        const channel = await helper.channel();
+        _.times(50, () => channel.sendToQueue(safeQueueName, msg));
+        debug('waiting for messages to arrive');
         await testing.poll(async () => {
-          debug('filling monitor testing safe queue');
-          let res = await helper.rabbit.queue(safeQueueName);
+          let res = await rabbitManager.queue(safeQueueName);
           assert.equal(res.messages, 50);
         }, 64);
       }
@@ -323,7 +328,7 @@ suite('Namespace', () => {
       await channel.purgeQueue(queueName);
       await testing.poll(async () => {
         debug('clearing monitor testing queue');
-        let res = await helper.rabbit.queue(queueName);
+        let res = await rabbitManager.queue(queueName);
         assert.equal(res.messages, 0);
       }, 64);
       await channel.bindQueue(queueName, exchangeName, '#');
@@ -334,8 +339,8 @@ suite('Namespace', () => {
 
       let monitorIteration = async () => {
         await maintenance.monitor({
-          cfg: helper.cfg,
-          manager: helper.rabbit,
+          cfg,
+          manager: rabbitManager,
           Namespace: helper.Namespace,
           RabbitQueue: helper.RabbitQueue,
           notify,
@@ -345,112 +350,128 @@ suite('Namespace', () => {
       debug('On empty queue, we should not alert');
       await monitorIteration();
       assert.equal(notify.email.callCount, 0);
-      await helper.rabbit.queue(queueName);
+      await rabbitManager.queue(queueName);
 
       debug('Below alert threshold, we should not alert');
       await fillQueue(3);
       await monitorIteration();
       assert.equal(notify.email.callCount, 0);
-      await helper.rabbit.queue(queueName);
+      await rabbitManager.queue(queueName);
 
       debug('Above alert threshold, we should alert');
       await fillQueue(3);
       await monitorIteration();
       assert.equal(notify.email.callCount, 1);
-      await helper.rabbit.queue(queueName);
+      await rabbitManager.queue(queueName);
 
       debug('Above delete threshold, we should delete');
       await fillQueue(10);
       await monitorIteration();
-      return await helper.rabbit.queue(queueName).then(() => {
+      return await rabbitManager.queue(queueName).then(() => {
         assert(false, 'This queue should have been deleted!');
       }).catch(async err => {
         assert(err.statusCode === 404, 'Queue should not be found');
         assert(notify.email.callCount, 2);
-        await helper.rabbit.queue(safeQueueName); // This should not have been deleted
+        await rabbitManager.queue(safeQueueName); // This should not have been deleted
       });
     });
   });
 
   suite('monitoring other (long tests)', async () => {
-    if (!helper.haveRabbitMq) {
-      this.pending = true;
-    }
+    helper.withAmqpChannels(mock, skipping);
+
+    suiteSetup(function() {
+      if (skipping()) {
+        this.skip();
+      }
+    });
 
     test('connections', async () => {
       // ensure there's a connection we shouldn't mess with
-      let unmanagedConnection = await amqp.connect(helper.cfg.app.amqpUrl);
+      let unmanaged = await helper.channel();
+      let managedConnection;
 
       // setup a connection we _should_ kill
-      let ns2 = await helper.pulse.claimNamespace('tcpulse-test-m2', {
+      let ns2 = await helper.client().claimNamespace('tcpulse-test-m2', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
       let dyingConnection = await amqp.connect(ns2.connectionString);
 
-      // To get us over the kill threshold. This is inherently somewhat
-      // flaky, since it is using timing in tests, but unfortunately this
-      // relies on times recorded by rabbitmq itself.
-      await testing.sleep(5000);
+      try {
+        // To get us over the kill threshold. This is inherently somewhat
+        // flaky, since it is using timing in tests, but unfortunately this
+        // relies on times recorded by rabbitmq itself.
+        await testing.sleep(5000);
 
-      // setup a connection we _should not_ kill
-      let ns1 = await helper.pulse.claimNamespace('tcpulse-test-m1', {
-        expires: taskcluster.fromNow('1 day'),
-        contact: 'a@a.com',
-      });
-      let managedConnection = await amqp.connect(ns1.connectionString);
+        // setup a connection we _should not_ kill
+        let ns1 = await helper.client().claimNamespace('tcpulse-test-m1', {
+          expires: taskcluster.fromNow('1 day'),
+          contact: 'a@a.com',
+        });
+        managedConnection = await amqp.connect(ns1.connectionString);
 
-      await testing.poll(async () => {
-        let connectedUsers = _.map(await helper.rabbit.connections(), 'user');
-        assert(_.includes(connectedUsers, 'guest'));
-        assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-        assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
-      });
+        await testing.poll(async () => {
+          let connectedUsers = _.map(await rabbitManager.connections(), 'user');
+          assert(_.includes(connectedUsers, 'guest'));
+          assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
+          assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+        });
 
-      await maintenance.monitor({
-        cfg: _.defaults({monitor: {connectionMaxLifetime: '-5 seconds'}}, helper.cfg),
-        manager: helper.rabbit,
-        Namespace: helper.Namespace,
-        RabbitQueue: helper.RabbitQueue,
-        notify: {email: sinon.spy()},
-      });
+        await maintenance.monitor({
+          cfg: _.defaults({monitor: {connectionMaxLifetime: '-5 seconds'}}, cfg),
+          manager: rabbitManager,
+          Namespace: helper.Namespace,
+          RabbitQueue: helper.RabbitQueue,
+          notify: {email: sinon.spy()},
+        });
 
-      await testing.poll(async () => {
-        let connectedUsers = _.map(await helper.rabbit.connections(), 'user');
-        assert(_.includes(connectedUsers, 'guest'));
-        assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-        assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
-      });
+        await testing.poll(async () => {
+          let connectedUsers = _.map(await rabbitManager.connections(), 'user');
+          assert(_.includes(connectedUsers, 'guest'));
+          assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
+          assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+        });
+      } finally {
+        try {
+          await dyingConnection.close();
+        } catch (err) {
+          // expected error..
+          if (!err.toString().match(/CONNECTION_FORCED/)) {
+            throw err;
+          }
+        }
+        await managedConnection.close();
+      }
     });
 
     test('exchanges', async () => {
       let exchangeName = 'exchange/tcpulse-test-n/bar';
-      let ns = await helper.pulse.claimNamespace('tcpulse-test-n', {
+      let ns = await helper.client().claimNamespace('tcpulse-test-n', {
         expires: taskcluster.fromNow('-1 day'),
         contact: 'a@a.com',
       });
-      let connection = await amqp.connect(ns.connectionString);
-      let channel = await connection.createChannel();
+      let channel = await helper.channel();
       await channel.assertExchange(exchangeName, 'topic');
 
-      let exchanges = _.map(await helper.rabbit.exchanges(), 'name');
+      let exchanges = _.map(await rabbitManager.exchanges(), 'name');
       assert(_.includes(exchanges, exchangeName));
 
       await maintenance.expire({
         Namespace: helper.Namespace,
         now: taskcluster.fromNow('0 hours'),
-        cfg: helper.cfg,
-        rabbitManager: helper.rabbit,
+        cfg,
+        rabbitManager,
       });
       await maintenance.monitor({
-        cfg: helper.cfg,
-        manager: helper.rabbit,
+        cfg,
+        manager: rabbitManager,
         Namespace: helper.Namespace,
         RabbitQueue: helper.RabbitQueue,
         notify: {email: sinon.spy()},
       });
 
-      exchanges = _.map(await helper.rabbit.exchanges(), 'name');
+      exchanges = _.map(await rabbitManager.exchanges(), 'name');
       assert(!_.includes(exchanges, exchangeName));
     });
   });

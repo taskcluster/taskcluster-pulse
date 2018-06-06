@@ -309,11 +309,10 @@ module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) 
   let namespaces = [];
   let continuationToken = null;
 
-  do {
-    let res = await Namespace.scan();
-    namespaces = namespaces.concat(res.entries);
-    continuationToken = res.continuation;
-  } while (continuationToken);
+  await Namespace.scan({}, {
+    limit: 250,
+    handler: async entry => namespaces.push(entry),
+  });
 
   await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost});
 
