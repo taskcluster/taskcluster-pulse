@@ -25,11 +25,14 @@ helper.secrets.mockSuite('API', ['taskcluster'], function(mock, skipping) {
       }
     });
 
-    test('success', () => {
-      return helper.client().claimNamespace('tcpulse-test-sample', {
+    test('success', async function() {
+      const res = await helper.client().claimNamespace('tcpulse-test-sample', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
+      assert.equal(res.namespace, 'tcpulse-test-sample');
+      // check that the connection string is in the proper vhost
+      assert(res.connectionString.endsWith(encodeURIComponent('/test')));
     });
 
     test('success, no contact', () => {

@@ -46,7 +46,7 @@ let Namespace = Entity.configure({
   },
 });
 
-var buildConnectionString = ({username, password, hostname, protocol, port}) => {
+var buildConnectionString = ({username, password, hostname, protocol, port, vhost}) => {
   // Construct connection string
   return [
     protocol,
@@ -57,6 +57,8 @@ var buildConnectionString = ({username, password, hostname, protocol, port}) => 
     hostname,
     ':',
     port,
+    '/',
+    encodeURIComponent(vhost),
   ].join('');
 };
 
@@ -80,6 +82,7 @@ Namespace.prototype.json = function({cfg, includePassword}) {
       password: this.password,
       hostname: cfg.app.amqpHostname,
       port: cfg.app.amqpPort,
+      vhost: cfg.app.amqpVhost,
     });
     rv.reclaimAt = reclaimAt.toJSON();
   }

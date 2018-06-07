@@ -12,9 +12,6 @@ defaults:
     # namespaces are rotated at this time interval.
     namespaceRotationInterval: '1 hour'
 
-    # the virtualhost to manage
-    virtualhost: /
-
     # permissions to give to users; {{namespace}} is replaced by the namespace.  Note that
     # when users are deleted, anything that user had permission to configure is also deleted!
     # Note that the queue/ and exchange/ conventions are used in monitor config below as well.
@@ -37,6 +34,7 @@ defaults:
     amqpHostname: !env TASKCLUSTER_AMQP_HOSTNAME
     amqpProtocol: !env TASKCLUSTER_AMQP_PROTOCOL
     amqpPort: !env TASKCLUSTER_AMQP_PORT
+    amqpVhost: !env TASKCLUSTER_AMQP_VHOST
 
   aws:
     accessKeyId:      !env AWS_ACCESS_KEY_ID
@@ -109,13 +107,13 @@ test:
   app:
     namespacePrefix: 'tcpulse-test-'
     namespaceRotationInterval: '1 hour'
-    virtualhost: /
     userConfigPermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userWritePermission: "^(queue/{{namespace}}/.*|exchange/{{namespace}}/.*)"
     userReadPermission: "^(queue/{{namespace}}/.*|exchange/.*)"
     amqpHostname: localhost
     amqpProtocol: 'amqp://'
     amqpPort: 5672 # Non SSL port
+    amqpVhost: /test
     namespaceTableName: 'TestPulseNamespaces'
     rabbitQueueTableName: 'TestPulseRabbitQueues'
 

@@ -20,9 +20,10 @@ suite('RabbitManager', function() {
   let queuenames = [];
 
   // setup some useful values..
-  let cfg, rabbitManager;
+  let cfg, rabbitManager, vhost;
   suiteSetup('set cfg and rabbit', async function() {
     cfg = await helper.load('cfg');
+    vhost = cfg.app.amqpVhost;
     rabbitManager = await helper.load('rabbitManager');
   });
 
@@ -53,7 +54,7 @@ suite('RabbitManager', function() {
     }
     for (let queuename of queuenames) {
       try {
-        await rabbitManager.deleteQueue(queuename);
+        await rabbitManager.deleteQueue(queuename, vhost);
       } catch (e) {
         // Intentianlly do nothing since this queue might not have been created.
       }
@@ -103,7 +104,7 @@ suite('RabbitManager', function() {
   });
 
   test('exchanges', async () => {
-    const exchanges = await rabbitManager.exchanges();
+    const exchanges = await rabbitManager.exchanges(vhost);
     assert(exchanges instanceof Array);
     assert(_.has(exchanges[0], 'name'));
   });
@@ -141,15 +142,15 @@ suite('RabbitManager', function() {
 
   test('userPermissions_singleVhost', async () => {
     await rabbitManager.createUser(usernames[0], 'dummy', []);
-    await rabbitManager.setUserPermissions(usernames[0], '/', '.*', '.*', '.*');
+    await rabbitManager.setUserPermissions(usernames[0], vhost, '.*', '.*', '.*');
 
-    let permissions = await rabbitManager.userPermissions(usernames[0], '/');
+    let permissions = await rabbitManager.userPermissions(usernames[0], vhost);
     assert(_.has(permissions, 'user'));
     assert(_.has(permissions, 'vhost'));
     // Delete the permission and test the error case.
-    await rabbitManager.deleteUserPermissions(usernames[0], '/');
+    await rabbitManager.deleteUserPermissions(usernames[0], vhost);
     try {
-      await rabbitManager.userPermissions(usernames[0], '/');
+      await rabbitManager.userPermissions(usernames[0], vhost);
       assert(false);
     } catch (error) {
       assert.equal(error.statusCode, 404);
@@ -158,7 +159,7 @@ suite('RabbitManager', function() {
 
   test('userPermissions_allVhosts', async () => {
     await rabbitManager.createUser(usernames[0], 'dummy', []);
-    await rabbitManager.setUserPermissions(usernames[0], '/', '.*', '.*', '.*');
+    await rabbitManager.setUserPermissions(usernames[0], vhost, '.*', '.*', '.*');
 
     let permissions = await rabbitManager.userPermissions(usernames[0]);
     assert(permissions instanceof Array);
@@ -168,9 +169,9 @@ suite('RabbitManager', function() {
   });
 
   test('queues', async () => {
-    await rabbitManager.createQueue(queuenames[0]);
+    await rabbitManager.createQueue(queuenames[0], {}, vhost);
 
-    let queues = await rabbitManager.queues();
+    let queues = await rabbitManager.queues(vhost);
 
     // at least one of these is the created queue
     assert(queues instanceof Array);
@@ -179,17 +180,17 @@ suite('RabbitManager', function() {
   });
 
   test('createGetDeleteQueue', async () => {
-    await rabbitManager.createQueue(queuenames[0]);
+    await rabbitManager.createQueue(queuenames[0], {}, vhost);
 
-    const queue = await rabbitManager.queue(queuenames[0]);
+    const queue = await rabbitManager.queue(queuenames[0], vhost);
     assert.equal(queue.name, queuenames[0]);
 
-    await rabbitManager.deleteQueue(queuenames[0]);
+    await rabbitManager.deleteQueue(queuenames[0], vhost);
   });
 
   test('deleteQueueNotFoundException', async () => {
     try {
-      await rabbitManager.deleteQueue(queuenames[0]);
+      await rabbitManager.deleteQueue(queuenames[0], vhost);
       assert(false);
     } catch (error) {
       assert.equal(error.statusCode, 404);
@@ -197,11 +198,11 @@ suite('RabbitManager', function() {
   });
 
   test('messagesFromQueue', async () => {
-    await rabbitManager.createQueue(queuenames[0]);
+    await rabbitManager.createQueue(queuenames[0], {}, vhost);
     const channel = await helper.channel();
     await channel.sendToQueue(queuenames[0], Buffer.from('foobar'));
 
-    const dequeuedMessages = await rabbitManager.messagesFromQueue(queuenames[0]);
+    const dequeuedMessages = await rabbitManager.messagesFromQueue(queuenames[0], {}, vhost);
     assert(dequeuedMessages instanceof Array);
     assert(_.has(dequeuedMessages[0], 'payload_bytes'));
     assert(_.has(dequeuedMessages[0], 'redelivered'));

@@ -27,9 +27,10 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
   };
 
   // setup some useful values..
-  let cfg, rabbitManager;
+  let cfg, rabbitManager, vhost;
   suiteSetup('set cfg and rabbit', async function() {
     cfg = await helper.load('cfg');
+    vhost = cfg.app.amqpVhost;
     rabbitManager = await helper.load('rabbitManager');
   });
 
@@ -290,10 +291,10 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
     let fillQueue = async (number) => {
       debug('adding ' + number + ' messages to the testing queue');
       _.times(number, () => channel.publish(exchangeName, 'bar', new Buffer('baz')));
-      let baseline = (await rabbitManager.queue(queueName)).messages;
+      let baseline = (await rabbitManager.queue(queueName, vhost)).messages;
       await testing.poll(async () => {
         debug('filling monitor testing queue');
-        let res = await rabbitManager.queue(queueName);
+        let res = await rabbitManager.queue(queueName, vhost);
         assert.equal(res.messages, baseline + number);
       }, 64);
     };
@@ -310,15 +311,15 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
     test('basic', async () => {
       // Set up a queue that shouldn't be managed by the service
       let safeQueueName = 'beeblebrox';
-      await rabbitManager.createQueue(safeQueueName);
-      if ((await rabbitManager.queue(safeQueueName)).messages < 50) {
+      await rabbitManager.createQueue(safeQueueName, {}, vhost);
+      if ((await rabbitManager.queue(safeQueueName, vhost)).messages < 50) {
         debug('filling monitor testing safe queue');
         const msg = Buffer.from('baz');
         const channel = await helper.channel();
         _.times(50, () => channel.sendToQueue(safeQueueName, msg));
         debug('waiting for messages to arrive');
         await testing.poll(async () => {
-          let res = await rabbitManager.queue(safeQueueName);
+          let res = await rabbitManager.queue(safeQueueName, vhost);
           assert.equal(res.messages, 50);
         }, 64);
       }
@@ -328,7 +329,7 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
       await channel.purgeQueue(queueName);
       await testing.poll(async () => {
         debug('clearing monitor testing queue');
-        let res = await rabbitManager.queue(queueName);
+        let res = await rabbitManager.queue(queueName, vhost);
         assert.equal(res.messages, 0);
       }, 64);
       await channel.bindQueue(queueName, exchangeName, '#');
@@ -350,29 +351,29 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
       debug('On empty queue, we should not alert');
       await monitorIteration();
       assert.equal(notify.email.callCount, 0);
-      await rabbitManager.queue(queueName);
+      await rabbitManager.queue(queueName, vhost);
 
       debug('Below alert threshold, we should not alert');
       await fillQueue(3);
       await monitorIteration();
       assert.equal(notify.email.callCount, 0);
-      await rabbitManager.queue(queueName);
+      await rabbitManager.queue(queueName, vhost);
 
       debug('Above alert threshold, we should alert');
       await fillQueue(3);
       await monitorIteration();
       assert.equal(notify.email.callCount, 1);
-      await rabbitManager.queue(queueName);
+      await rabbitManager.queue(queueName, vhost);
 
       debug('Above delete threshold, we should delete');
       await fillQueue(10);
       await monitorIteration();
-      return await rabbitManager.queue(queueName).then(() => {
+      return await rabbitManager.queue(queueName, vhost).then(() => {
         assert(false, 'This queue should have been deleted!');
       }).catch(async err => {
         assert(err.statusCode === 404, 'Queue should not be found');
         assert(notify.email.callCount, 2);
-        await rabbitManager.queue(safeQueueName); // This should not have been deleted
+        await rabbitManager.queue(safeQueueName, vhost); // This should not have been deleted
       });
     });
   });
@@ -412,7 +413,7 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
         managedConnection = await amqp.connect(ns1.connectionString);
 
         await testing.poll(async () => {
-          let connectedUsers = _.map(await rabbitManager.connections(), 'user');
+          let connectedUsers = _.map(await rabbitManager.connections(vhost), 'user');
           assert(_.includes(connectedUsers, 'guest'));
           assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
           assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
@@ -427,7 +428,7 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
         });
 
         await testing.poll(async () => {
-          let connectedUsers = _.map(await rabbitManager.connections(), 'user');
+          let connectedUsers = _.map(await rabbitManager.connections(vhost), 'user');
           assert(_.includes(connectedUsers, 'guest'));
           assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
           assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
@@ -454,7 +455,7 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
       let channel = await helper.channel();
       await channel.assertExchange(exchangeName, 'topic');
 
-      let exchanges = _.map(await rabbitManager.exchanges(), 'name');
+      let exchanges = _.map(await rabbitManager.exchanges(vhost), 'name');
       assert(_.includes(exchanges, exchangeName));
 
       await maintenance.expire({
@@ -471,7 +472,7 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
         notify: {email: sinon.spy()},
       });
 
-      exchanges = _.map(await rabbitManager.exchanges(), 'name');
+      exchanges = _.map(await rabbitManager.exchanges(vhost), 'name');
       assert(!_.includes(exchanges, exchangeName));
     });
   });

@@ -76,6 +76,17 @@ class RabbitManager {
   }
 
   /**
+   * Create a vhost
+   *
+   * @param {string} name - vhost name
+   */
+  async createVhost(name) {
+    let response = await this.request(`vhosts/${encodeURIComponent(name)}`, {
+      method: 'put',
+    });
+  }
+
+  /**
    * Create a user. All parameters are mandatory.
    *
    * Note that the RabbitMQ API does not distinguish creating a user from updating
@@ -131,7 +142,7 @@ class RabbitManager {
   /**
    * Get a list of all exchanges
    */
-  async exchanges(vhost='/') {
+  async exchanges(vhost) {
     vhost = this.encode(vhost);
     return await this.request(`exchanges/${vhost}`);
   }
@@ -143,7 +154,7 @@ class RabbitManager {
    * @param {string} vhost      - Virtual host.
    * @default
    */
-  async exchange(name, vhost='/') {
+  async exchange(name, vhost) {
     assert(name);
     assert(vhost);
 
@@ -158,7 +169,7 @@ class RabbitManager {
    * @param {Object} options    - Settings of the exchange (default is {type: 'direct'}; all keys are optional).
    * @param {string} vhost      - Virtual host (default is "/").
    */
-  async createExchange(name, options={type: 'direct'}, vhost='/') {
+  async createExchange(name, options={type: 'direct'}, vhost) {
     [name, vhost] = this.encode([name, vhost]);
     return await this.request(`exchanges/${vhost}/${name}`, {
       body: JSON.stringify(options),
@@ -173,7 +184,7 @@ class RabbitManager {
    * @param {string} vhost      - Virtual host.
    * @default
    */
-  async deleteExchange(name, vhost='/') {
+  async deleteExchange(name, vhost) {
     assert(name);
     assert(vhost);
 
@@ -274,7 +285,7 @@ class RabbitManager {
    * @param {string} vhost      - Virtual host.
    * @default
    */
-  async deleteUserPermissions(user, vhost='/') {
+  async deleteUserPermissions(user, vhost) {
     assert(user);
     assert(vhost);
 
@@ -288,7 +299,7 @@ class RabbitManager {
    * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
    * Note that the stats may not be available for newly-created queues.
    */
-  async queues(vhost='/') {
+  async queues(vhost) {
     vhost = this.encode(vhost);
     return await this.request(`queues/${vhost}`);
   }
@@ -300,7 +311,7 @@ class RabbitManager {
    * @param {string} vhost      - Virtual host.
    * @default
    */
-  async queue(name, vhost='/') {
+  async queue(name, vhost) {
     assert(name);
     assert(vhost);
 
@@ -320,7 +331,7 @@ class RabbitManager {
    * @param {string} options.node
    * @param {string} vhost      - Virtual host (default is "/").
    */
-  async createQueue(name, options={}, vhost='/') {
+  async createQueue(name, options={}, vhost) {
     assert(name);
     assert(options instanceof Object);
     assert(vhost);
@@ -339,7 +350,7 @@ class RabbitManager {
    * @param {string} vhost      - Virtual host.
    * @default
    */
-  async deleteQueue(name, vhost='/') {
+  async deleteQueue(name, vhost) {
     assert(name);
     assert(vhost);
 
@@ -362,13 +373,10 @@ class RabbitManager {
    *     the specified amount of bytes.
    * @param {string} vhost              - The virtual host where the queue resides (default is "/").
    */
-  async messagesFromQueue(name, options={count: 5, requeue: true, encoding:'auto', truncate: 50000}, vhost='/') {
+  async messagesFromQueue(name, options={}, vhost) {
     assert(name);
-    assert(options instanceof Object);
-    assert(options.count);
-    assert(options.requeue);
-    assert(options.encoding);
     assert(vhost);
+    _.defaults(options, {count: 5, requeue: true, encoding:'auto', truncate: 50000});
 
     [name, vhost] = this.encode([name, vhost]);
     return await this.request(`queues/${vhost}/${name}/get`, {
@@ -382,7 +390,7 @@ class RabbitManager {
    * This provides information directly from the RabbitMQ API - see
    * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
    */
-  async connections(vhost='/') {
+  async connections(vhost) {
     return await this.request(vhost == '/' ? 'connections' : `vhosts/${this.encode(vhost)}/connections`);
   }
 
