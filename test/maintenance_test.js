@@ -391,18 +391,26 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
       let unmanaged = await helper.channel();
       let managedConnection;
 
-      // setup a connection we _should_ kill
+      // setup a connection we should kill due to being too old
       let ns2 = await helper.client().claimNamespace('tcpulse-test-m2', {
         expires: taskcluster.fromNow('1 day'),
         contact: 'a@a.com',
       });
-      let dyingConnection = await amqp.connect(ns2.connectionString);
+      let dyingConnection2 = await amqp.connect(ns2.connectionString);
+      let dyingConnection3;
 
       try {
         // To get us over the kill threshold. This is inherently somewhat
         // flaky, since it is using timing in tests, but unfortunately this
         // relies on times recorded by rabbitmq itself.
         await testing.sleep(5000);
+
+        // setup a connection we should kill due to being expired
+        let ns3 = await helper.client().claimNamespace('tcpulse-test-m3', {
+          expires: taskcluster.fromNow('-1 day'),
+          contact: 'a@a.com',
+        });
+        dyingConnection3 = await amqp.connect(ns3.connectionString);
 
         // setup a connection we _should not_ kill
         let ns1 = await helper.client().claimNamespace('tcpulse-test-m1', {
@@ -416,6 +424,14 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
           assert(_.includes(connectedUsers, 'guest'));
           assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
           assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+          assert(_.includes(connectedUsers, 'tcpulse-test-m3-1'));
+        });
+
+        await maintenance.expire({
+          cfg,
+          rabbitManager,
+          Namespace: helper.Namespace,
+          now: new Date(),
         });
 
         await maintenance.monitor({
@@ -430,15 +446,18 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
           let connectedUsers = _.map(await rabbitManager.connections(), 'user');
           assert(_.includes(connectedUsers, 'guest'));
           assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-          assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1'));
+          assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1')); // killed
+          assert(!_.includes(connectedUsers, 'tcpulse-test-m3-1')); // killed
         });
       } finally {
-        try {
-          await dyingConnection.close();
-        } catch (err) {
-          // expected error..
-          if (!err.toString().match(/CONNECTION_FORCED/)) {
-            throw err;
+        for (let dyingConn of [dyingConnection2, dyingConnection3]) {
+          try {
+            await dyingConn.close();
+          } catch (err) {
+            // expected error..
+            if (!err.toString().match(/CONNECTION_FORCED/)) {
+              throw err;
+            }
           }
         }
         await managedConnection.close();

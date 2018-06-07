@@ -254,21 +254,21 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
   let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
   let connections = await manager.connections(virtualhost);
   for (let connection of connections) {
-    let user = connection.user.slice(0, -2);
-    if (!(user.startsWith(prefix) && /-[12]$/.test(connection.user))) {
+    if (!(connection.user.startsWith(prefix) && /-[12]$/.test(connection.user))) {
       continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
     let terminate = false;
     let reason = '';
+    let namespace = connection.user.slice(0, -2);
 
-    if (!_.find(namespaces, {namespace: user})) {
-      debug(`Terminating connection for expired user: ${user}`);
+    if (!_.find(namespaces, {namespace})) {
+      debug(`Terminating connection for expired user: ${connection.user}`);
       reason = 'Namespace expired.';
       terminate = true;
     }
     if (old > new Date(connection.connected_at)) {
-      debug(`Terminating connection for user: ${user} due to being too long-lived`);
+      debug(`Terminating connection for user: ${connection.user} due to being too long-lived`);
       reason = 'Connection too long lived.';
       terminate = true;
     }
