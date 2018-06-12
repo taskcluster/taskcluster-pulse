@@ -4,7 +4,6 @@
 /.bin
 /.vagrant
 /node_modules
-/docs/jsdoc
 
 # Vim
 *~
