@@ -44,14 +44,7 @@ Testing
 
 Steps before running the test:
 
-1. Run rabbitmq.  Either:
-    * Install rabbitmq locally:
-       * macOS: `brew update && brew install rabbitmq`
-       * Linux: install rabbitmq from the repository of your distribution
-    * Start rabbitmq: `rabbitmq-server`.
-    * Enable management API: `rabbitmq-plugins enable rabbitmq_management`
-   or
-    * Run `docker run -ti --rm -p 15672:15672 -p 5672:5672 rabbitmq:3.6-management-alpine`
+1. Run rabbitmq: `docker run -ti --rm --env RABBITMQ_DEFAULT_VHOST=/test -p 15672:15672 -p 5672:5672 rabbitmq:3.6-management-alpine`.  You can do this another way if you'd like, but installation, configuration and so on are up to you!
 1. Copy `user-config-example.yml` to `user-config.yml` unmodified
 1. `yarn install`
 

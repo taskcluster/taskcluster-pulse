@@ -9,7 +9,7 @@ let setPulseUser = async function({username, password, namespace, rabbitManager,
 
   await rabbitManager.setUserPermissions(
     username,
-    cfg.app.virtualhost,
+    cfg.app.amqpVhost,
     cfg.app.userConfigPermission.replace(/{{namespace}}/g, namespace),
     cfg.app.userWritePermission.replace(/{{namespace}}/g, namespace),
     cfg.app.userReadPermission.replace(/{{namespace}}/g, namespace),
@@ -92,8 +92,8 @@ module.exports.expire = async function({Namespace, cfg, rabbitManager, now}) {
       // delete both users. NOTE: this does not terminate any active
       // connections these users may have!  Connection termination is left to
       // the RabbitMonitor.
-      await rabbitManager.deleteUser(`${ns.namespace}-1`, cfg.app.virtualhost);
-      await rabbitManager.deleteUser(`${ns.namespace}-2`, cfg.app.virtualhost);
+      await rabbitManager.deleteUser(`${ns.namespace}-1`, cfg.app.amqpVhost);
+      await rabbitManager.deleteUser(`${ns.namespace}-2`, cfg.app.amqpVhost);
 
       // finally, delete the table row
       await Namespace.remove({namespace: ns.namespace});
@@ -304,7 +304,7 @@ async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue}) {
 module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) => {
   let prefix = cfg.app.namespacePrefix;
   let alertLifetime = cfg.app.rabbitQueueExpirationDelay;
-  let virtualhost = cfg.app.virtualhost;
+  let virtualhost = cfg.app.amqpVhost;
 
   let namespaces = [];
   let continuationToken = null;

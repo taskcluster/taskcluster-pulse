@@ -44,11 +44,16 @@ exports.secrets = new Secrets({
  */
 
 exports.withRabbitMq = (mock, skipping) => {
-  suiteSetup('check for rabbitmq', function() {
+  suiteSetup('check for rabbitmq', async function() {
     if (!skipping() && !exports.secrets.have('rabbitmq')) {
       throw new Error('RabbitMQ secrets (RABBIT_{USERNAME,PASSWORD,BASE_URL} ' +
         'are required for this suite');
     }
+
+    // create the testing vhost (this will succeed even if it exists)
+    cfg = await exports.load('cfg');
+    rabbitManager = await exports.load('rabbitManager');
+    await rabbitManager.createVhost(cfg.app.amqpVhost);
   });
 };
 
@@ -153,7 +158,7 @@ exports.withAmqpChannels = (mock, skipping) => {
       return;
     }
 
-    // decipher an amqp url from the ampqBaseUrl (which is for the management API)
+    // decipher an amqp url from the rabbit.baseUrl (which is for the management API)
     const cfg = await exports.load('cfg');
     const baseUrl = new URL(cfg.rabbit.baseUrl);
     const amqpUrl = [
@@ -166,6 +171,8 @@ exports.withAmqpChannels = (mock, skipping) => {
       baseUrl.hostname,
       ':',
       baseUrl.protocol === 'http:' ? '5672' : '5671',
+      '/',
+      encodeURIComponent(cfg.app.amqpVhost),
     ].join('');
 
     exports.channel = async () => {
