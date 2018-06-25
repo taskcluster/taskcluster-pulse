@@ -9,32 +9,7 @@ properties:
     description: |
       List of namespaces.
     type:           array
-    items:
-      title:        "Namespace"
-      description: |
-        Representation of the namespace
-      type:         object
-      properties:
-        namespace:
-          title:          "Name"
-          type:           string
-          description: |
-            The namespace's name
-        expires:
-          description: |
-            Date-time after which the username, and all associated queues and
-            exchanges, should be deleted.
-          type:       string
-          format:     date-time
-        created:
-          description:    Date-time at which this namespace was first claimed.
-          type:           string
-          format:         date-time
-      additionalProperties: false
-      required:
-        - namespace
-        - created
-        - expires
+    items: {$ref: "namespace.json#"}
   continuationToken:
     title:                "Continuation Token"
     type:                 string
