@@ -31,25 +31,6 @@ let builder = new APIBuilder({
 module.exports = builder;
 
 builder.declare({
-  method:     'get',
-  route:      '/overview',
-  name:       'overview',
-  title:      'Rabbit Overview',
-  output:     'rabbit-overview.yml',
-  stability:  'experimental',
-  description: [
-    'Get an overview of the Rabbit cluster.',
-  ].join('\n'),
-}, async function(req, res) {
-  res.reply(
-    _.pick(
-      await this.rabbitManager.overview(),
-      ['rabbitmq_version', 'cluster_name', 'management_version']
-    )
-  );
-});
-
-builder.declare({
   method:         'get',
   route:          '/namespaces',
   name:           'listNamespaces',

@@ -10,10 +10,6 @@ helper.secrets.mockSuite('API', ['taskcluster'], function(mock, skipping) {
   helper.withEntities(mock, skipping);
   helper.withServer(mock, skipping);
 
-  test('overview runs without error', async function() {
-    await helper.client().overview();
-  });
-
   test('ping', async function() {
     await helper.client().ping();
   });
