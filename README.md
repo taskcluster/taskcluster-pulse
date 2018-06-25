@@ -39,8 +39,10 @@ Compatibility
 This service works with RabbitMQ 3.6.x.
 Later versions come with changes to the management interface that are not yet supported.
 
-Testing
--------
+Development
+-----------
+
+## Testing
 
 Steps before running the test:
 
@@ -59,9 +61,15 @@ stopping and re-starting the docker container.. (The test suite adds and
 removes users during the test. Flushing the database ensures nothing is leaked
 between tests.)
 
+## Deployment
+
+The `rotateNamespaces` app should run more often than once an hour.  The
+`expireNamespaces` app need only run daily.  The `monitorRabbit` is a
+long-running daemon, one of which should be running at all times.
+
 ## Post-Deployment Verification
 
-We need to figure this out before this is turned on for real.
+Access the listNamespaces endpoint using `curl`, and examine logs for any issues with rotation or monitoring.
 
 ## Service Owner
 
