@@ -19,16 +19,8 @@ properties:
     description:    Date-time at which this namespace was first claimed.
     type:           string
     format:         date-time
-  contact:
-    type:           string
-    format:         email
-    description: |
-      E-mail address that will reach people who can address problems with runaway queue length.
-      The service will send warning notifications to this address before forcibly deleting the
-      queue.
 additionalProperties: false
 required:
   - namespace
   - created
   - expires
-  - contact

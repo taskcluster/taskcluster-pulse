@@ -118,7 +118,8 @@ helper.secrets.mockSuite('API', ['taskcluster'], function(mock, skipping) {
         expires,
         contact: 'newperson@a.com',
       });
-      assert(b.contact === 'newperson@a.com');
+      // contact info isn't returned (ever)
+      assert(!b.contact);
     });
 
     test('entry creation', async () => {

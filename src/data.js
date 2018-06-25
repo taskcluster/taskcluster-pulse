@@ -67,7 +67,6 @@ Namespace.prototype.json = function({cfg, includePassword}) {
     namespace: this.namespace,
     created: this.created.toJSON(),
     expires: this.expires.toJSON(),
-    contact: this.contact.length > 0 ? this.contact : undefined,
   };
   if (includePassword) {
     // calculate the reclaimAt as half the rotation interval past the
