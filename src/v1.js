@@ -18,6 +18,18 @@ let builder = new APIBuilder({
   ].join('\n'),
   serviceName: 'pulse',
   version: 'v1',
+  params: {
+    namespace: function(namespace) {
+      if (namespace.length > 64 || !/^[A-Za-z0-9_-]+$/.test(namespace)) {
+        return 'Invalid namespace provided.  Namespaces must be at most 64 bytes and contain only [A-Za-z-0-9_:-]';
+      }
+      const prefix = this.cfg.app.namespacePrefix;
+      if (prefix && !namespace.startsWith(prefix)) {
+        return `Invalid namespace provided.  Namespaces must begin with '${prefix}'`;
+      }
+      return false;
+    },
+  },
   context: [
     'cfg',
     'rabbitManager',
@@ -82,10 +94,6 @@ builder.declare({
 }, async function(req, res) {
   let {namespace} = req.params;
 
-  if (!isNamespaceValid(namespace, this.cfg)) {
-    return invalidNamespaceResponse(req, res, this.cfg);
-  }
-
   let ns = await this.Namespace.load({namespace}, true);
   if (!ns) {
     return res.reportError('ResourceNotFound', 'No such namespace', {});
@@ -126,10 +134,6 @@ builder.declare({
   // involve abusing pulse), but we can solve this problem if and when we have
   // it.
 
-  if (!isNamespaceValid(namespace, this.cfg)) {
-    return invalidNamespaceResponse(req, res, this.cfg);
-  }
-
   let expires = req.body.expires ? new Date(req.body.expires) : taskcluster.fromNow('4 hours');
   let contact = req.body.contact || '';
   let newNamespace = await maintenance.claim({
@@ -142,31 +146,3 @@ builder.declare({
   });
   res.reply(newNamespace.json({cfg: this.cfg, includePassword: true}));
 });
-
-/**
- * Report an InvalidNamspeace error to the user
- */
-function invalidNamespaceResponse(request, response, cfg) {
-  let msg = ['Invalid namespace provided.  Namespaces must:'];
-  msg.push('* be at most 64 bytes');
-  msg.push('* contain only [A-Za-z-0-9_:-]');
-  if (cfg.app.namespacePrefix) {
-    msg.push(`* begin with "${cfg.app.namespacePrefix}"`);
-  }
-  return response.reportError('InvalidNamespace', msg.join('\n'), {});
-}
-
-/**
- * Check whether this is a valid namespace name, considering both hard-coded
- * limits and the configurable required prefix
- */
-function isNamespaceValid(namespace, cfg) {
-  if (namespace.length > 64 || !/^[A-Za-z0-9_-]+$/.test(namespace)) {
-    return false;
-  }
-  const prefix = cfg.app.namespacePrefix;
-  if (prefix && !namespace.startsWith(prefix)) {
-    return false;
-  }
-  return true;
-}
