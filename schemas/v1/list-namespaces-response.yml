@@ -9,39 +9,7 @@ properties:
     description: |
       List of namespaces.
     type:           array
-    items:
-      title:        "Namespace"
-      description: |
-        Representation of the namespace
-      type:         object
-      properties:
-        namespace:
-          title:          "Name"
-          type:           string
-          description: |
-            The namespace's name
-        expires:
-          description: |
-            Date-time after which the username, and all associated queues and
-            exchanges, should be deleted.
-          type:       string
-          format:     date-time
-        created:
-          description:    Date-time at which this namespace was first claimed.
-          type:           string
-          format:         date-time
-        contact:
-          type:           string
-          format:         email
-          description: |
-            E-mail address that will reach people who can address problems with runaway queue length.
-            The service will send warning notifications to this address before forcibly deleting the
-            queue.  If omitted, no warnings will be given.
-      additionalProperties: false
-      required:
-        - namespace
-        - created
-        - expires
+    items: {$ref: "namespace.json#"}
   continuationToken:
     title:                "Continuation Token"
     type:                 string
