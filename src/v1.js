@@ -35,7 +35,7 @@ builder.declare({
   route:      '/overview',
   name:       'overview',
   title:      'Rabbit Overview',
-  output:     'rabbit-overview.json',
+  output:     'rabbit-overview.yml',
   stability:  'experimental',
   description: [
     'Get an overview of the Rabbit cluster.',
@@ -54,7 +54,7 @@ builder.declare({
   route:          '/namespaces',
   name:           'listNamespaces',
   stability:      'experimental',
-  output:         'list-namespaces-response.json',
+  output:         'list-namespaces-response.yml',
   title:          'List Namespaces',
   query: {
     limit: /[0-9]+/,
@@ -92,7 +92,7 @@ builder.declare({
   route:    '/namespace/:namespace',
   name:     'namespace',
   title:    'Get a namespace',
-  output:   'namespace.json',
+  output:   'namespace.yml',
   stability: 'experimental',
   description: [
     'Get public information about a single namespace. This is the same information',
@@ -117,8 +117,8 @@ builder.declare({
   route:    '/namespace/:namespace',
   name:     'claimNamespace',
   title:    'Claim a namespace',
-  input:    'namespace-request.json',
-  output:   'namespace-response.json',
+  input:    'namespace-request.yml',
+  output:   'namespace-response.yml',
   scopes: {AllOf:
     ['pulse:namespace:<namespace>'],
   },
