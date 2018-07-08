@@ -25,14 +25,6 @@ The service monitors the existing credentials:
 * notifying owners of, and eventually deleting queues which grow too large
 * deleting queues and exchanges when the corresponding namespace expires
 
-Status
-------
-
-This service is not in production yet.
-
-It does not yet connect to pulse, and the queue monitoring mentioned above is
-not yet complete.
-
 Compatibility
 -------------
 
