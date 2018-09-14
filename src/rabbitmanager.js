@@ -19,15 +19,20 @@ const _ = require('lodash');
  */
 class RabbitManager {
   /**
-   * @param {Object} config
-   * @param {string} config.username
-   * @param {string} config.password
-   * @param {string} config.baseUrl - The base URL of the management API, usually "<DASHBOARD URL>/api/".
+   * @param {Object} service config
    */
-  constructor({username, password, baseUrl}) {
+  constructor(cfg) {
+    const {username, password, baseUrl} = cfg.rabbit;
     assert(username, 'Must provide a rabbitmq username!');
     assert(password, 'Must provide a rabbitmq password!');
     assert(baseUrl, 'Must provide a rabbitmq baseUrl!');
+
+    // rabbitManager doesn't use these settings, but sanity-checks them to
+    // avoid surprisingly obscure errors if they are missing
+    assert(cfg.app.amqpHostname, 'app.amqpHostname must be set');
+    assert(cfg.app.amqpProtocol, 'app.amqpProtocol must be set');
+    assert(cfg.app.amqpPort, 'app.amqpPort must be set');
+    assert(cfg.app.amqpVhost, 'app.amqpVhost must be set');
 
     this.options = {
       baseUrl,
