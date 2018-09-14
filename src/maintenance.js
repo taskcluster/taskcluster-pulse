@@ -191,7 +191,7 @@ async function updateQueueStatus(name, currentState, RabbitQueue) {
   return sendMessage;
 }
 
-async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify, virtualhost}) {
+async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify, virtualhost, mock}) {
   let debug = Debug('maintenance.handle-queues');
   let queues = await manager.queues(virtualhost);
   for (let queue of queues) {
@@ -205,7 +205,9 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     if (!ns) {
       // We get rid of any queues from namespaces that are gone
       debug(`deleting ${queue.name} with ${queue.messages} messages because namespace is expired.`);
-      await manager.deleteQueue(queue.name, virtualhost);
+      if (!mock) {
+        await manager.deleteQueue(queue.name, virtualhost);
+      }
       continue;
     }
 
@@ -216,11 +218,13 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
 
       if (ns.contact) {
         debug(`Sending a ${currentState} notification for ${queue.name} to ${ns.contact}`);
-        await notify.email({
-          address: ns.contact,
-          subject,
-          content,
-        });
+        if (!mock) {
+          await notify.email({
+            address: ns.contact,
+            subject,
+            content,
+          });
+        }
       } else {
         debug(`Skipped sending a notification for ${queue.name} because no contact specified`);
       }
@@ -229,12 +233,14 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
     // Finally we'll delete the queues if they're danger-big
     if (currentState === 'danger') {
       debug(`deleting ${queue.name} with ${queue.messages} messages.`);
-      await manager.deleteQueue(queue.name, virtualhost);
+      if (!mock) {
+        await manager.deleteQueue(queue.name, virtualhost);
+      }
     }
   }
 }
 
-async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost}) {
+async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost, mock}) {
   let debug = Debug('maintenance.handle-exchanges');
   let exchanges = await manager.exchanges(virtualhost);
   for (let exchange of exchanges) {
@@ -244,12 +250,14 @@ async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost}) 
     let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
     if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
-      await manager.deleteExchange(exchange.name, virtualhost);
+      if (!mock) {
+        await manager.deleteExchange(exchange.name, virtualhost);
+      }
     }
   }
 }
 
-async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}) {
+async function handleConnections({cfg, prefix, manager, namespaces, virtualhost, mock}) {
   let debug = Debug('maintenance.handle-connections');
   let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
   let connections = await manager.connections(virtualhost);
@@ -273,7 +281,7 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
       terminate = true;
     }
 
-    if (terminate) {
+    if (terminate && !mock) {
       await manager.terminateConnection(connection.name, reason).catch(err => {
         if (err.statusCode !== 404) {
           throw err;
@@ -283,7 +291,7 @@ async function handleConnections({cfg, prefix, manager, namespaces, virtualhost}
   }
 }
 
-async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue}) {
+async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue, mock}) {
   let debug = Debug('maintenance.cleanup-rabbit-queues');
   let old = taskcluster.fromNow(alertLifetime);
   let count = 0;
@@ -295,16 +303,23 @@ async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue}) {
     handler:          async (qs) => {
       count++;
       debug(`deleting old RabbitQueue azure entity ${qs.name}`);
-      await RabbitQueue.remove({name: qs.name});
+      if (!mock) {
+        await RabbitQueue.remove({name: qs.name});
+      }
     },
   });
-  debug(`deleted ${count} old RabbitQueue azure entities`);
 }
 
 module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) => {
+  let debug = Debug('maintenance');
   let prefix = cfg.app.namespacePrefix;
   let alertLifetime = cfg.app.rabbitQueueExpirationDelay;
   let virtualhost = cfg.app.amqpVhost;
+  let mock = cfg.app.mockMaintenance;
+
+  if (mock) {
+    debug('maintenance running in mock mode');
+  }
 
   let namespaces = [];
   let continuationToken = null;
@@ -314,11 +329,11 @@ module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) 
     handler: async entry => namespaces.push(entry),
   });
 
-  await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost});
+  await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost, mock});
 
   return await Promise.all([
-    handleQueues({cfg: cfg.monitor, prefix, manager, namespaces, RabbitQueue, notify, virtualhost}),
-    handleExchanges({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost}),
-    cleanupRabbitQueues({cfg: cfg.monitor, alertLifetime, RabbitQueue}),
+    handleQueues({cfg: cfg.monitor, prefix, manager, namespaces, RabbitQueue, notify, virtualhost, mock}),
+    handleExchanges({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost, mock}),
+    cleanupRabbitQueues({cfg: cfg.monitor, alertLifetime, RabbitQueue, mock}),
   ]);
 };
