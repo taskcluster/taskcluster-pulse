@@ -9,6 +9,9 @@ defaults:
     rabbitQueueTableName: 'PulseRabbitQueues'
     rabbitQueueExpirationDelay: '- 24 hours' # This means we re-send alerts at most once a day
 
+    # if true, maintenance will just log about what it would do, and not actually do it.
+    mockMaintenance: !env:bool MOCK_MAINTENANCE
+
     # namespaces are rotated at this time interval.
     namespaceRotationInterval: '1 hour'
 
