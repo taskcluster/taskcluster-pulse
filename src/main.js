@@ -102,7 +102,7 @@ let load = loader({
 
   rabbitManager: {
     requires: ['cfg'],
-    setup: ({cfg}) => new RabbitManager(cfg.rabbit),
+    setup: ({cfg}) => new RabbitManager(cfg),
   },
 
   'monitor-rabbit': {
