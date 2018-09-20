@@ -168,13 +168,17 @@ async function updateQueueStatus(name, currentState, RabbitQueue) {
   try {
     rq = await RabbitQueue.load({name});
 
-    rq.modify((entity) => {
-      if (entity.state !== currentState) {
-        entity.state = currentState;
-        entity.updated = new Date();
-        sendMessage = true;
-      }
-    });
+    // only initiate a modify operation if we need to; concurrent state
+    // updates will be disambiguated yb the inner `if`.
+    if (rq.state !== currentState) {
+      rq.modify((entity) => {
+        if (entity.state !== currentState) {
+          entity.state = currentState;
+          entity.updated = new Date();
+          sendMessage = true;
+        }
+      });
+    }
   } catch (e) {
     if (e.code !== 'ResourceNotFound') {
       throw e;
