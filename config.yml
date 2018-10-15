@@ -90,9 +90,9 @@ defaults:
     connectionMaxLifetime:    '- 72 hours' # Longest time a connection from a client should live
 
     # These manage parameters for taskcluster-lib-iterate
-    iterationLength:          15
-    iterationGap:             15
-    iterationFailes:          5
+    iterationLength:          45
+    iterationGap:             60
+    iterationFails:           5
 
   alerter:
     messageCountTolerance:        !env ALERTER_MESSAGE_COUNT_TOLERANCE
