@@ -26,6 +26,12 @@ defaults:
     # tags to be applied to new users
     userTags: [taskcluster-pulse]
 
+    # Every username will have this value as a prefix, before the namespace.
+    # Use this to allow several taskcluster-pulse instances to co-exist within
+    # the same RabbitMQ service but in different vhosts (since users are not
+    # scoped to vhosts, the names must be globally unique)
+    usernamePrefix: !env USERNAME_PREFIX
+
     # If given, all namespaces must begin with this string; and only
     # matching queues and exchanges will be monitored.  Use this to
     # allow taskcluster-pulse to "share" a rabbitmq virtualhost with other

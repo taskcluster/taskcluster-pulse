@@ -77,7 +77,7 @@ Namespace.prototype.json = function({cfg, includePassword}) {
 
     rv.connectionString = buildConnectionString({
       protocol: cfg.app.amqpProtocol,
-      username: this.username(),
+      username: this.username(cfg, this.rotationState),
       password: this.password,
       hostname: cfg.app.amqpHostname,
       port: cfg.app.amqpPort,
@@ -89,8 +89,8 @@ Namespace.prototype.json = function({cfg, includePassword}) {
   return rv;
 };
 
-Namespace.prototype.username = function() {
-  return `${this.namespace}-${this.rotationState}`;
+Namespace.prototype.username = function(cfg, rotationState) {
+  return `${cfg.app.usernamePrefix || ''}${this.namespace}-${rotationState}`;
 };
 
 /**
