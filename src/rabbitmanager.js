@@ -66,7 +66,7 @@ class RabbitManager {
     if (raw instanceof Array) {
       return _.map(raw, (value) => encodeURIComponent(value));
     }
-    assert(typeof raw == 'string');
+    assert(typeof raw === 'string');
     return encodeURIComponent(raw);
   }
 
@@ -396,7 +396,7 @@ class RabbitManager {
    * https://cdn.rawgit.com/rabbitmq/rabbitmq-management/master/priv/www/doc/stats.html
    */
   async connections(vhost) {
-    return await this.request(vhost == '/' ? 'connections' : `vhosts/${this.encode(vhost)}/connections`);
+    return await this.request(vhost === '/' ? 'connections' : `vhosts/${this.encode(vhost)}/connections`);
   }
 
   /** Forcibly terminate a connection
