@@ -13,6 +13,9 @@ const sinon = require('sinon');
 const debug = Debug('maintenance-test');
 
 helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping) {
+  suiteSetup(() => {
+    helper.load.cfg('app.usernamePrefix', 'PFX-');
+  });
   helper.withRabbitMq(mock, skipping);
   helper.withEntities(mock, skipping);
   helper.withServer(mock, skipping);
@@ -121,7 +124,6 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
 
       await helper.Namespace.create({
         namespace: 'tcpulse-test-sample',
-        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -149,7 +151,6 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
 
       await helper.Namespace.create({
         namespace: 'tcpulse-test-sample1',
-        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -160,7 +161,6 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
 
       await helper.Namespace.create({
         namespace: 'tcpulse-test-sample2',
-        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -193,7 +193,6 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
 
       await helper.Namespace.create({
         namespace: 'tcpulse-test-sample1',
-        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -204,7 +203,6 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
 
       await helper.Namespace.create({
         namespace: 'tcpulse-test-sample2',
-        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -236,7 +234,6 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
 
       await helper.Namespace.create({
         namespace: 'tcpulse-test-sample1',
-        username: 'tcpulse-test-sample',
         password: old_pass,
         created:  new Date(),
         expires:  taskcluster.fromNow('1 hour'),
@@ -423,9 +420,9 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
         await testing.poll(async () => {
           let connectedUsers = _.map(await rabbitManager.connections(vhost), 'user');
           assert(_.includes(connectedUsers, 'guest'));
-          assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-          assert(_.includes(connectedUsers, 'tcpulse-test-m2-1'));
-          assert(_.includes(connectedUsers, 'tcpulse-test-m3-1'));
+          assert(_.includes(connectedUsers, 'PFX-tcpulse-test-m1-1'));
+          assert(_.includes(connectedUsers, 'PFX-tcpulse-test-m2-1'));
+          assert(_.includes(connectedUsers, 'PFX-tcpulse-test-m3-1'));
         });
 
         await maintenance.expire({
@@ -446,9 +443,9 @@ helper.secrets.mockSuite('Maintenance', ['taskcluster'], function(mock, skipping
         await testing.poll(async () => {
           let connectedUsers = _.map(await rabbitManager.connections(vhost), 'user');
           assert(_.includes(connectedUsers, 'guest'));
-          assert(_.includes(connectedUsers, 'tcpulse-test-m1-1'));
-          assert(!_.includes(connectedUsers, 'tcpulse-test-m2-1')); // killed
-          assert(!_.includes(connectedUsers, 'tcpulse-test-m3-1')); // killed
+          assert(_.includes(connectedUsers, 'PFX-tcpulse-test-m1-1'));
+          assert(!_.includes(connectedUsers, 'PFX-tcpulse-test-m2-1')); // killed
+          assert(!_.includes(connectedUsers, 'PFX-tcpulse-test-m3-1')); // killed
         });
       } finally {
         for (let dyingConn of [dyingConnection2, dyingConnection3]) {

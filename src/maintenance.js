@@ -27,8 +27,7 @@ module.exports.claim = async function({Namespace, cfg, rabbitManager, namespace,
 
   try {
     newNamespace = await Namespace.create({
-      namespace: namespace,
-      username: namespace,
+      namespace,
       password: slugid.v4(),
       created: new Date(),
       expires,
@@ -64,12 +63,12 @@ module.exports.claim = async function({Namespace, cfg, rabbitManager, namespace,
   if (created) {
     // set up the first user as active,
     await setPulseUser({
-      username: `${namespace}-1`,
+      username: `${newNamespace.username(cfg, '1')}`,
       password: newNamespace.password,
       namespace, cfg, rabbitManager});
     // ..and the second user as inactive (empty string means no logins allowed)
     await setPulseUser({
-      username: `${namespace}-2`,
+      username: `${newNamespace.username(cfg, '2')}`,
       password: '',
       namespace, cfg, rabbitManager});
   }
@@ -92,8 +91,8 @@ module.exports.expire = async function({Namespace, cfg, rabbitManager, now}) {
       // delete both users. NOTE: this does not terminate any active
       // connections these users may have!  Connection termination is left to
       // the RabbitMonitor.
-      await rabbitManager.deleteUser(`${ns.namespace}-1`, cfg.app.amqpVhost);
-      await rabbitManager.deleteUser(`${ns.namespace}-2`, cfg.app.amqpVhost);
+      await rabbitManager.deleteUser(`${ns.username(cfg, '1')}`, cfg.app.amqpVhost);
+      await rabbitManager.deleteUser(`${ns.username(cfg, '2')}`, cfg.app.amqpVhost);
 
       // finally, delete the table row
       await Namespace.remove({namespace: ns.namespace});
@@ -118,7 +117,7 @@ module.exports.rotate = async function({Namespace, now, cfg, rabbitManager}) {
 
       // modify user in rabbitmq
       await setPulseUser({
-        username: `${ns.namespace}-${rotationState}`,
+        username: ns.username(cfg, rotationState),
         password,
         namespace: ns.namespace,
         cfg, rabbitManager});
@@ -138,23 +137,23 @@ function decideState(queue, cfg) {
   let currentState = 'normal';
   let subject = `${queue.name} has returned to a safe state`;
   let content = `
-The number of messages queued in \`${queue.name}\` is now below ${cfg.alertThreshold}.
+The number of messages queued in \`${queue.name}\` is now below ${cfg.monitor.alertThreshold}.
 No further action is necessary on your part, although you may want to investigate
 why this happened in the first place.`;
 
-  if (queue.messages > cfg.deleteThreshold) {
+  if (queue.messages > cfg.monitor.deleteThreshold) {
     currentState = 'danger';
     subject = `${queue.name} has been deleted!`;
     content = `
-The number of messages queued in \`${queue.name}\` exceeded ${cfg.deleteThreshold}.
+The number of messages queued in \`${queue.name}\` exceeded ${cfg.monitor.deleteThreshold}.
 At the time of deletion, there were ${queue.messages} messages in the queue.`;
-  } else if (queue.messages > cfg.alertThreshold) {
+  } else if (queue.messages > cfg.monitor.alertThreshold) {
     currentState = 'warning';
     subject = `${queue.name} is in danger of being deleted!`;
     content = `
-The number of messages queued in \`${queue.name}\` is now above ${cfg.alertThreshold}.
+The number of messages queued in \`${queue.name}\` is now above ${cfg.monitor.alertThreshold}.
 Currently there are ${queue.messages} messages in the queue. If this number goes
-above ${cfg.deleteThreshold}, the queue will be deleted and all of the messages
+above ${cfg.monitor.deleteThreshold}, the queue will be deleted and all of the messages
 will be lost.
 
 A common cause of this situation is that your service has crashed.`;
@@ -195,15 +194,15 @@ async function updateQueueStatus(name, currentState, RabbitQueue) {
   return sendMessage;
 }
 
-async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, notify, virtualhost, mock}) {
+async function handleQueues({cfg, manager, namespaces, RabbitQueue, notify, virtualhost, mock}) {
   let debug = Debug('maintenance.handle-queues');
   let queues = await manager.queues(virtualhost);
   for (let queue of queues) {
-    if (!queue.name.startsWith(cfg.queuePrefix + prefix)) {
+    if (!queue.name.startsWith(cfg.monitor.queuePrefix + cfg.app.namespacePrefix)) {
       continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
-    let namespace = queue.name.slice(cfg.queuePrefix.length).split('/')[0];
+    let namespace = queue.name.slice(cfg.monitor.queuePrefix.length).split('/')[0];
     let ns = _.find(namespaces, {namespace});
 
     if (!ns) {
@@ -244,14 +243,14 @@ async function handleQueues({cfg, prefix, manager, namespaces, RabbitQueue, noti
   }
 }
 
-async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost, mock}) {
+async function handleExchanges({cfg, manager, namespaces, virtualhost, mock}) {
   let debug = Debug('maintenance.handle-exchanges');
   let exchanges = await manager.exchanges(virtualhost);
   for (let exchange of exchanges) {
-    if (!exchange.name.startsWith(cfg.exchangePrefix + prefix)) {
+    if (!exchange.name.startsWith(cfg.monitor.exchangePrefix + cfg.app.namespacePrefix)) {
       continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
-    let namespace = exchange.name.slice(cfg.exchangePrefix.length).split('/')[0];
+    let namespace = exchange.name.slice(cfg.monitor.exchangePrefix.length).split('/')[0];
     if (!_.find(namespaces, {namespace})) {
       debug(`Deleting ${exchange.name} because associated namespace is expired!`);
       if (!mock) {
@@ -261,18 +260,23 @@ async function handleExchanges({cfg, prefix, manager, namespaces, virtualhost, m
   }
 }
 
-async function handleConnections({cfg, prefix, manager, namespaces, virtualhost, mock}) {
+async function handleConnections({cfg, manager, namespaces, virtualhost, mock}) {
   let debug = Debug('maintenance.handle-connections');
-  let old = taskcluster.fromNow(cfg.connectionMaxLifetime);
+  let old = taskcluster.fromNow(cfg.monitor.connectionMaxLifetime);
   let connections = await manager.connections(virtualhost);
+
+  // build a prefix composed of both the uesrname and namespace prefix
+  const usernamePrefix = cfg.app.usernamePrefix || '';
+  const fullUsernamePrefix = `${usernamePrefix}${cfg.app.namespacePrefix}`;
+
   for (let connection of connections) {
-    if (!(connection.user.startsWith(prefix) && /-[12]$/.test(connection.user))) {
+    if (!(connection.user.startsWith(fullUsernamePrefix) && /-[12]$/.test(connection.user))) {
       continue; // Note: This is very important to avoid stepping on pulseguardian's toes
     }
 
     let terminate = false;
     let reason = '';
-    let namespace = connection.user.slice(0, -2);
+    let namespace = connection.user.slice(usernamePrefix.length, -2);
 
     if (!_.find(namespaces, {namespace})) {
       debug(`Terminating connection for expired user: ${connection.user}`);
@@ -316,7 +320,6 @@ async function cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue, mock}) {
 
 module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) => {
   let debug = Debug('maintenance');
-  let prefix = cfg.app.namespacePrefix;
   let alertLifetime = cfg.app.rabbitQueueExpirationDelay;
   let virtualhost = cfg.app.amqpVhost;
   let mock = cfg.app.mockMaintenance;
@@ -333,11 +336,11 @@ module.exports.monitor = async ({cfg, manager, Namespace, RabbitQueue, notify}) 
     handler: async entry => namespaces.push(entry),
   });
 
-  await handleConnections({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost, mock});
+  await handleConnections({cfg, manager, namespaces, virtualhost, mock});
 
   return await Promise.all([
-    handleQueues({cfg: cfg.monitor, prefix, manager, namespaces, RabbitQueue, notify, virtualhost, mock}),
-    handleExchanges({cfg: cfg.monitor, prefix, manager, namespaces, virtualhost, mock}),
-    cleanupRabbitQueues({cfg: cfg.monitor, alertLifetime, RabbitQueue, mock}),
+    handleQueues({cfg, manager, namespaces, RabbitQueue, notify, virtualhost, mock}),
+    handleExchanges({cfg, manager, namespaces, virtualhost, mock}),
+    cleanupRabbitQueues({cfg, alertLifetime, RabbitQueue, mock}),
   ]);
 };
